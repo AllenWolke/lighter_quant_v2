@@ -1,0 +1,103 @@
+# GUI配置文件
+# 量化交易系统可视化界面配置
+
+# 界面设置
+ui:
+  theme: "dark"  # 主题: dark, light
+  language: "zh_CN"  # 语言: zh_CN, en_US
+  window_size: [1400, 900]  # 窗口大小 [宽度, 高度]
+  auto_save: true  # 自动保存设置
+  save_interval: 300  # 自动保存间隔（秒）
+
+# 图表设置
+charts:
+  default_timeframe: "1m"  # 默认时间周期
+  default_limit: 200  # 默认数据量
+  update_interval: 5000  # 更新间隔（毫秒）
+  indicators:
+    ma: true  # 移动平均线
+    ema: false  # 指数移动平均线
+    rsi: false  # RSI指标
+    macd: false  # MACD指标
+    bollinger: false  # 布林带
+  colors:
+    candle_up: "#2ecc71"  # 上涨K线颜色
+    candle_down: "#e74c3c"  # 下跌K线颜色
+    ma_line: "#3498db"  # 均线颜色
+    volume: "#95a5a6"  # 成交量颜色
+
+# 交易设置
+trading:
+  default_symbol: "BTC_USDT"  # 默认交易对
+  default_strategy: "ut_bot"  # 默认策略
+  auto_start: false  # 自动开始交易
+  confirm_trades: true  # 交易确认
+  sound_alerts: true  # 声音提醒
+
+# 风险控制设置
+risk_control:
+  max_position_size: 0.1  # 最大仓位比例
+  max_leverage: 5.0  # 最大杠杆
+  max_daily_loss: 0.02  # 最大日亏损
+  max_drawdown: 0.1  # 最大回撤
+  auto_stop_loss: true  # 自动止损
+  risk_warnings: true  # 风险警告
+
+# 通知设置
+notifications:
+  popup_alerts: true  # 弹窗提醒
+  sound_alerts: true  # 声音提醒
+  email_alerts: true  # 邮件提醒
+  trade_notifications: true  # 交易通知
+  error_notifications: true  # 错误通知
+  risk_notifications: true  # 风险通知
+
+# 数据设置
+data:
+  cache_size: 1000  # 缓存大小
+  cache_timeout: 300  # 缓存超时（秒）
+  auto_refresh: true  # 自动刷新
+  refresh_interval: 1000  # 刷新间隔（毫秒）
+  real_time: true  # 实时数据
+
+# 日志设置
+logging:
+  level: "INFO"  # 日志级别
+  file: "logs/gui.log"  # 日志文件
+  max_size: 10485760  # 最大文件大小（字节）
+  backup_count: 5  # 备份文件数量
+  console_output: true  # 控制台输出
+
+# 性能设置
+performance:
+  max_threads: 4  # 最大线程数
+  memory_limit: 1073741824  # 内存限制（字节）
+  cpu_limit: 80  # CPU使用限制（百分比）
+  optimize_charts: true  # 优化图表性能
+  lazy_loading: true  # 懒加载
+
+# 快捷键设置
+shortcuts:
+  start_trading: "Ctrl+S"  # 开始交易
+  stop_trading: "Ctrl+T"  # 停止交易
+  refresh_data: "F5"  # 刷新数据
+  open_settings: "Ctrl+,"  # 打开设置
+  close_position: "Ctrl+C"  # 平仓
+  emergency_stop: "Ctrl+E"  # 紧急停止
+
+# 窗口布局设置
+layout:
+  left_panel_width: 400  # 左侧面板宽度
+  right_panel_width: 1000  # 右侧面板宽度
+  chart_height: 600  # 图表高度
+  position_table_height: 300  # 持仓表格高度
+  auto_resize: true  # 自动调整大小
+
+# 开发设置
+development:
+  debug_mode: false  # 调试模式
+  show_debug_info: false  # 显示调试信息
+  enable_profiling: false  # 启用性能分析
+  log_network: false  # 记录网络请求
+  mock_data: false  # 使用模拟数据
+

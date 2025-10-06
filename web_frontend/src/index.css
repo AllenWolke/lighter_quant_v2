@@ -1,0 +1,316 @@
+/* 全局样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 通用工具类 */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
+.gap-16 {
+  gap: 16px;
+}
+
+.gap-24 {
+  gap: 24px;
+}
+
+.mb-8 {
+  margin-bottom: 8px;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.mb-24 {
+  margin-bottom: 24px;
+}
+
+.mt-8 {
+  margin-top: 8px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.mt-24 {
+  margin-top: 24px;
+}
+
+.p-8 {
+  padding: 8px;
+}
+
+.p-16 {
+  padding: 16px;
+}
+
+.p-24 {
+  padding: 24px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+  
+  .mobile-full {
+    width: 100% !important;
+  }
+}
+
+/* 动画效果 */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* 交易相关样式 */
+.profit {
+  color: #52c41a;
+}
+
+.loss {
+  color: #ff4d4f;
+}
+
+.neutral {
+  color: #1890ff;
+}
+
+/* 状态指示器 */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.status-online {
+  background-color: #52c41a;
+}
+
+.status-offline {
+  background-color: #ff4d4f;
+}
+
+.status-warning {
+  background-color: #faad14;
+}
+
+/* 卡片样式 */
+.trading-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.trading-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.trading-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+/* 表格样式增强 */
+.ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background-color: #f5f5f5;
+}
+
+/* 按钮样式增强 */
+.ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.ant-btn-danger {
+  background-color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.ant-btn-danger:hover {
+  background-color: #ff7875;
+  border-color: #ff7875;
+}
+
+/* 表单样式增强 */
+.ant-form-item-label > label {
+  font-weight: 500;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.loading-text {
+  margin-left: 12px;
+  color: #666;
+}
+
+/* 空状态 */
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #999;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #d9d9d9;
+}
+
+/* 错误状态 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #ff4d4f;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+/* 成功状态 */
+.success-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #52c41a;
+}
+
+.success-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}

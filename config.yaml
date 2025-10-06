@@ -1,0 +1,110 @@
+# Lighter量化交易程序配置文件
+
+# Lighter交易所配置
+lighter:
+  base_url: "https://testnet.zklighter.elliot.ai"  # 测试网地址
+  # base_url: "https://mainnet.zklighter.elliot.ai"  # 主网地址
+  api_key_private_key: ""  # API密钥私钥，需要从lighter交易所获取
+  account_index: 0  # 账户索引
+  api_key_index: 0  # API密钥索引
+
+# 交易配置
+trading:
+  tick_interval: 1.0  # 主循环间隔（秒）
+  max_concurrent_strategies: 5  # 最大并发策略数
+
+# 风险管理配置
+risk:
+  max_position_size: 0.1  # 最大仓位比例（10%）
+  max_daily_loss: 0.05    # 最大日亏损比例（5%）
+  max_drawdown: 0.15      # 最大回撤比例（15%）
+  max_leverage: 10.0      # 最大杠杆倍数
+  max_orders_per_minute: 10  # 每分钟最大订单数
+  max_open_orders: 20     # 最大开仓订单数
+
+# 日志配置
+log:
+  level: "INFO"  # 日志级别：DEBUG, INFO, WARNING, ERROR
+  file: "logs/quant_trading.log"  # 日志文件路径
+
+# 数据源配置
+data_sources:
+  primary: "lighter"  # 主数据源: lighter, tradingview
+  tradingview:
+    enabled: true  # 是否启用TradingView数据源
+    session_id: "qs_1"
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    symbol_mapping:  # 交易对映射
+      "BTC_USDT": "BTCUSDT"
+      "ETH_USDT": "ETHUSDT"
+
+# 通知配置
+notifications:
+  enabled: true
+  batch_size: 5  # 批量发送大小
+  batch_interval: 60  # 批量发送间隔（秒）
+  rate_limits:  # 频率限制
+    trade_executed:
+      time_window: 300  # 5分钟
+      max_count: 20
+    stop_loss:
+      time_window: 300
+      max_count: 10
+    take_profit:
+      time_window: 300
+      max_count: 10
+    system_error:
+      time_window: 60
+      max_count: 5
+  
+  # 邮件通知配置
+  email:
+    enabled: true
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: ""  # 请填入您的邮箱
+    password: ""  # 请填入您的邮箱密码或应用密码
+    from_email: ""  # 发送者邮箱
+    to_emails: []  # 接收者邮箱列表
+    min_level: "info"  # 最小通知级别
+    allowed_types: []  # 允许的通知类型，空表示全部
+
+# 策略配置
+strategies:
+  mean_reversion:
+    enabled: true
+    market_id: 0
+    lookback_period: 20
+    threshold: 2.0
+    position_size: 0.1
+    stop_loss: 0.02
+    take_profit: 0.01
+    
+  momentum:
+    enabled: true
+    market_id: 0
+    short_period: 5
+    long_period: 20
+    momentum_threshold: 0.02
+    position_size: 0.1
+    stop_loss: 0.03
+    take_profit: 0.05
+    
+  arbitrage:
+    enabled: true
+    market_id_1: 0
+    market_id_2: 1
+    price_threshold: 0.01
+    position_size: 0.02
+    stop_loss: 0.005
+    take_profit: 0.01
+    
+  ut_bot:
+    enabled: true
+    market_id: 0
+    key_value: 1.0
+    atr_period: 10
+    use_heikin_ashi: false
+    position_size: 0.1
+    stop_loss: 0.02
+    take_profit: 0.01

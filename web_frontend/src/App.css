@@ -1,0 +1,402 @@
+/* 主应用样式 */
+.App {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* 主布局样式 */
+.main-layout {
+  min-height: 100vh;
+}
+
+.main-layout .ant-layout-sider {
+  background: #001529;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+}
+
+.main-layout .ant-layout-header {
+  background: #fff;
+  padding: 0 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.main-layout .ant-layout-content {
+  margin: 24px;
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: calc(100vh - 112px);
+}
+
+/* 侧边栏样式 */
+.sidebar {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #002140;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid #1890ff;
+}
+
+.sidebar-menu {
+  border-right: none;
+}
+
+.sidebar-menu .ant-menu-item {
+  margin: 0;
+  height: 48px;
+  line-height: 48px;
+}
+
+.sidebar-menu .ant-menu-item-selected {
+  background-color: #1890ff;
+}
+
+.sidebar-menu .ant-menu-item-selected::after {
+  display: none;
+}
+
+/* 头部样式 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #262626;
+  margin-left: 16px;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.header-user:hover {
+  background-color: #f5f5f5;
+}
+
+.header-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1890ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+}
+
+.header-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.header-user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+  line-height: 1.2;
+}
+
+.header-user-role {
+  font-size: 12px;
+  color: #8c8c8c;
+  line-height: 1.2;
+}
+
+/* 页面内容样式 */
+.page-content {
+  padding: 24px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: calc(100vh - 112px);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin-top: 4px;
+}
+
+.page-actions {
+  display: flex;
+  gap: 12px;
+}
+
+/* 卡片样式 */
+.page-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.page-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.page-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+}
+
+.page-card-content {
+  padding: 24px;
+}
+
+/* 统计卡片样式 */
+.stats-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.stats-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.stats-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.stats-card-title {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+.stats-card-icon {
+  font-size: 24px;
+  color: #1890ff;
+}
+
+.stats-card-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.stats-card-change {
+  font-size: 12px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stats-card-change.positive {
+  color: #52c41a;
+}
+
+.stats-card-change.negative {
+  color: #ff4d4f;
+}
+
+.stats-card-change.neutral {
+  color: #8c8c8c;
+}
+
+/* 表格样式 */
+.data-table {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.data-table .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+  color: #262626;
+}
+
+.data-table .ant-table-tbody > tr:hover > td {
+  background: #f5f5f5;
+}
+
+/* 表单样式 */
+.form-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-section {
+  margin-bottom: 32px;
+}
+
+.form-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* 按钮组样式 */
+.button-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.button-group .ant-btn {
+  min-width: 80px;
+}
+
+/* 状态指示器 */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.online {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.status-badge.offline {
+  background: #fff2f0;
+  color: #ff4d4f;
+  border: 1px solid #ffccc7;
+}
+
+.status-badge.warning {
+  background: #fffbe6;
+  color: #faad14;
+  border: 1px solid #ffe58f;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .main-layout .ant-layout-content {
+    margin: 16px;
+    padding: 16px;
+  }
+  
+  .page-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-layout .ant-layout-header {
+    padding: 0 16px;
+  }
+  
+  .main-layout .ant-layout-content {
+    margin: 8px;
+    padding: 8px;
+  }
+  
+  .page-content {
+    padding: 8px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .page-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  
+  .stats-card {
+    margin-bottom: 16px;
+  }
+  
+  .button-group {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 576px) {
+  .header-user-info {
+    display: none;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .stats-card-value {
+    font-size: 24px;
+  }
+}

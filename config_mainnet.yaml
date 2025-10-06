@@ -1,0 +1,113 @@
+# Lighter量化交易程序主网配置文件
+# ⚠️ 警告：这是主网配置，涉及真实资金！
+
+# Lighter主网配置
+lighter:
+  base_url: "https://mainnet.zklighter.elliot.ai"  # 主网地址
+  api_key_private_key: ""  # 请填入您的主网API密钥私钥
+  account_index: 0  # 主网账户索引
+  api_key_index: 0  # 主网API密钥索引
+
+# 交易配置（主网优化）
+trading:
+  tick_interval: 2.0  # 主循环间隔（秒）- 主网保守设置
+  max_concurrent_strategies: 2  # 最大并发策略数 - 主网减少
+
+# 风险管理配置（主网严格设置）
+risk:
+  max_position_size: 0.02  # 最大仓位比例（2%）- 主网保守
+  max_daily_loss: 0.01     # 最大日亏损比例（1%）- 主网严格
+  max_drawdown: 0.05       # 最大回撤比例（5%）- 主网严格
+  max_leverage: 5.0        # 最大杠杆倍数 - 主网降低
+  max_orders_per_minute: 3 # 每分钟最大订单数 - 主网限制
+  max_open_orders: 5       # 最大开仓订单数 - 主网限制
+
+# 日志配置（主网详细日志）
+log:
+  level: "INFO"  # 日志级别：DEBUG, INFO, WARNING, ERROR
+  file: "logs/mainnet_trading.log"  # 主网日志文件
+
+# 数据源配置
+data_sources:
+  primary: "lighter"  # 主数据源：lighter
+  tradingview:
+    enabled: true  # 是否启用TradingView数据源
+    session_id: "qs_1"
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    symbol_mapping:  # 交易对映射
+      "BTC_USDT": "BTCUSDT"
+      "ETH_USDT": "ETHUSDT"
+
+# 通知配置（主网重要）
+notifications:
+  enabled: true
+  batch_size: 3  # 主网减少批量大小
+  batch_interval: 30  # 主网缩短间隔
+  rate_limits:  # 主网严格频率限制
+    trade_executed:
+      time_window: 300
+      max_count: 10
+    stop_loss:
+      time_window: 300
+      max_count: 5
+    take_profit:
+      time_window: 300
+      max_count: 5
+    system_error:
+      time_window: 60
+      max_count: 3
+    risk_limit:
+      time_window: 60
+      max_count: 2
+  
+  # 邮件通知配置（主网必需）
+  email:
+    enabled: true
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: ""  # 请填入您的主网监控邮箱
+    password: ""  # 请填入您的邮箱密码或应用密码
+    from_email: ""  # 发送者邮箱
+    to_emails: []  # 接收者邮箱列表（主网建议多个）
+    min_level: "warning"  # 主网提高最小级别
+    allowed_types: []  # 允许的通知类型，空表示全部
+
+# 策略配置（主网保守设置）
+strategies:
+  ut_bot:
+    enabled: true
+    market_id: 0
+    key_value: 0.8      # 关键值 - 主网降低敏感度
+    atr_period: 14      # ATR周期 - 主网增加稳定性
+    use_heikin_ashi: false
+    position_size: 0.01  # 仓位大小 - 主网保守
+    stop_loss: 0.015    # 止损比例 - 主网严格
+    take_profit: 0.008  # 止盈比例 - 主网保守
+    
+  mean_reversion:
+    enabled: false      # 主网暂时禁用
+    market_id: 0
+    lookback_period: 30
+    threshold: 2.5
+    position_size: 0.01
+    stop_loss: 0.015
+    take_profit: 0.008
+    
+  momentum:
+    enabled: false      # 主网暂时禁用
+    market_id: 0
+    short_period: 5
+    long_period: 20
+    momentum_threshold: 0.02
+    position_size: 0.01
+    stop_loss: 0.015
+    take_profit: 0.008
+    
+  arbitrage:
+    enabled: false      # 主网暂时禁用
+    market_id_1: 0
+    market_id_2: 1
+    price_threshold: 0.01
+    position_size: 0.005
+    stop_loss: 0.01
+    take_profit: 0.005

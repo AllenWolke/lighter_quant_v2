@@ -1,0 +1,356 @@
+# Linux主网环境配置文件
+# 适用于Linux生产环境的Lighter主网部署
+
+# Lighter交易所配置
+lighter:
+  # 主网地址
+  base_url: "https://mainnet.zklighter.elliot.ai"
+  # 主网私钥 (请妥善保管)
+  api_key_private_key: "YOUR_MAINNET_PRIVATE_KEY_HERE"
+  # API密钥索引
+  api_key_index: 0
+  # 账户索引
+  account_index: 0
+  # 链ID (测试网: 300, 主网: 304)
+  chain_id: 304
+
+# 交易配置
+trading:
+  # 交易市场配置
+  markets:
+    - symbol: "ETH"
+      market_id: 0
+      base_asset: "ETH"
+      quote_asset: "USDC"
+      min_order_size: 0.001
+      max_order_size: 100.0
+      tick_size: 0.01
+    
+    - symbol: "BTC"
+      market_id: 1
+      base_asset: "BTC"
+      quote_asset: "USDC"
+      min_order_size: 0.0001
+      max_order_size: 10.0
+      tick_size: 0.1
+
+  # 交易策略配置
+  strategies:
+    # 动量策略 (保守设置)
+    momentum:
+      enabled: true
+      long_period: 20
+      short_period: 5
+      threshold: 0.015  # 降低阈值
+      leverage: 3.0     # 降低杠杆
+      position_size: 0.05  # 降低仓位
+      max_orders: 5
+      order_timeout: 300
+    
+    # 均值回归策略 (保守设置)
+    mean_reversion:
+      enabled: true
+      period: 14
+      threshold: 1.5   # 降低阈值
+      leverage: 2.0    # 降低杠杆
+      position_size: 0.03  # 降低仓位
+      max_orders: 3
+      order_timeout: 300
+    
+    # 套利策略 (低风险)
+    arbitrage:
+      enabled: false   # 主网暂时关闭高风险策略
+      price_threshold: 0.01
+      min_profit: 0.005
+      leverage: 1.0
+      position_size: 0.01
+      max_orders: 2
+      order_timeout: 60
+    
+    # UT Bot策略 (保守设置)
+    ut_bot:
+      enabled: false   # 主网暂时关闭
+      atr_period: 14
+      atr_multiplier: 1.5  # 降低倍数
+      heikin_ashi_period: 5
+      leverage: 2.0    # 降低杠杆
+      position_size: 0.03  # 降低仓位
+      max_orders: 3
+      order_timeout: 300
+
+# 严格的风险管理
+risk_management:
+  # 最大仓位大小 (占总资金的百分比)
+  max_position_size: 0.1    # 更保守的仓位限制
+  # 最大日亏损限制
+  max_daily_loss: 0.02     # 2%日亏损限制
+  # 最大回撤限制
+  max_drawdown: 0.05       # 5%最大回撤
+  # 止损百分比
+  stop_loss: 0.02          # 2%止损
+  # 最大杠杆倍数
+  max_leverage: 5.0        # 限制最大杠杆
+  # 单笔订单最大金额
+  max_order_value: 500.0   # 限制单笔订单金额
+  # 最大同时持仓数量
+  max_concurrent_positions: 3
+  # 紧急停止条件
+  emergency_stop:
+    enabled: true
+    max_hourly_loss: 0.01  # 1%小时亏损
+    max_consecutive_losses: 5
+    system_error_threshold: 3
+
+# 数据源配置
+data_sources:
+  # Lighter数据源
+  lighter:
+    enabled: true
+    websocket_url: "wss://mainnet.zklighter.elliot.ai/ws"
+    update_interval: 1
+    max_retries: 10      # 增加重试次数
+    retry_delay: 5
+    heartbeat_interval: 30
+    reconnect_delay: 10
+  
+  # TradingView数据源
+  tradingview:
+    enabled: true
+    api_key: "YOUR_TRADINGVIEW_API_KEY"
+    update_interval: 5
+    max_retries: 5
+    retry_delay: 10
+    backup_enabled: true
+
+# 通知配置
+notifications:
+  # 邮件通知
+  email:
+    enabled: true
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    use_tls: true
+    username: "your_email@gmail.com"
+    password: "your_app_password"
+    to_email: "recipient@gmail.com"
+    from_email: "your_email@gmail.com"
+    
+    # 通知类型 (主网更全面)
+    notify_on:
+      - trade_executed
+      - stop_loss_triggered
+      - daily_summary
+      - weekly_summary
+      - monthly_summary
+      - system_error
+      - risk_limit_exceeded
+      - emergency_stop
+      - connection_lost
+      - data_feed_error
+  
+  # 短信通知 (可选)
+  sms:
+    enabled: false
+    provider: "twilio"
+    api_key: "YOUR_SMS_API_KEY"
+    to_phone: "+1234567890"
+    notify_on:
+      - emergency_stop
+      - system_error
+      - critical_risk
+  
+  # 日志通知
+  log:
+    enabled: true
+    level: "INFO"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# 日志配置
+logging:
+  # 日志级别
+  level: "INFO"
+  # 日志文件路径
+  file: "/home/trader/logs/mainnet_trading.log"
+  # 最大文件大小
+  max_size: "50MB"
+  # 备份文件数量
+  backup_count: 10
+  # 控制台输出
+  console: false  # 生产环境关闭控制台输出
+  # 日志格式
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # 审计日志
+  audit:
+    enabled: true
+    file: "/home/trader/logs/audit.log"
+    log_trades: true
+    log_errors: true
+    log_access: true
+
+# Web界面配置
+web:
+  # 后端配置
+  backend:
+    host: "0.0.0.0"
+    port: 8000
+    debug: false
+    reload: false
+    ssl_enabled: true
+    ssl_cert: "/etc/ssl/certs/trading.crt"
+    ssl_key: "/etc/ssl/private/trading.key"
+  
+  # 前端配置
+  frontend:
+    host: "0.0.0.0"
+    port: 3000
+    api_url: "https://yourdomain.com/api"
+    ssl_enabled: true
+  
+  # 数据库配置
+  database:
+    url: "sqlite:///home/trader/data/mainnet_trading.db"
+    echo: false
+    pool_size: 20
+    max_overflow: 30
+    backup_enabled: true
+    backup_interval: "1h"
+
+# 性能配置
+performance:
+  # 数据更新间隔 (秒)
+  data_update_interval: 1
+  # 策略执行间隔 (秒)
+  strategy_execution_interval: 3  # 更频繁的策略执行
+  # 最大并发任务数
+  max_concurrent_tasks: 20
+  # 内存使用限制 (MB)
+  memory_limit: 8192
+  # CPU使用限制 (%)
+  cpu_limit: 70
+  # 连接池大小
+  connection_pool_size: 50
+
+# 生产环境配置
+production:
+  # 生产模式
+  mode: "production"
+  # 监控模式
+  monitoring: true
+  # 告警模式
+  alerting: true
+  # 自动恢复
+  auto_recovery: true
+  # 故障转移
+  failover: true
+
+# 安全配置
+security:
+  # 私钥加密
+  encrypt_private_keys: true
+  # 配置文件加密
+  encrypt_config: true
+  # 日志脱敏
+  log_sanitization: true
+  # API密钥轮换
+  key_rotation: true
+  rotation_interval: "30d"
+  # 访问控制
+  access_control: true
+  allowed_ips: ["127.0.0.1", "192.168.1.0/24"]
+  # 双因素认证
+  two_factor_auth: true
+  # 会话超时
+  session_timeout: 3600
+
+# 监控配置
+monitoring:
+  # 系统监控
+  system_monitoring: true
+  # 性能监控
+  performance_monitoring: true
+  # 错误监控
+  error_monitoring: true
+  # 健康检查
+  health_check: true
+  health_check_interval: 30
+  # 指标收集
+  metrics_collection: true
+  # 告警阈值
+  alert_thresholds:
+    cpu_usage: 70
+    memory_usage: 80
+    disk_usage: 85
+    error_rate: 2
+    latency: 1000
+  # 告警通知
+  alert_notifications:
+    email: true
+    sms: false
+    webhook: true
+    webhook_url: "https://yourdomain.com/alerts"
+
+# 备份配置
+backup:
+  # 自动备份
+  enabled: true
+  # 备份间隔
+  interval: "1h"
+  # 备份保留时间
+  retention: "30d"
+  # 备份位置
+  location: "/home/trader/backups"
+  # 远程备份
+  remote_backup: true
+  remote_location: "s3://your-bucket/trading-backups"
+  # 加密备份
+  encrypt_backup: true
+
+# 高可用配置
+high_availability:
+  # 启用高可用
+  enabled: true
+  # 主备模式
+  mode: "active_standby"
+  # 故障检测间隔
+  health_check_interval: 10
+  # 故障转移时间
+  failover_time: 30
+  # 数据同步
+  data_sync: true
+  sync_interval: 5
+
+# Linux特定配置
+linux:
+  # 用户配置
+  user: "trader"
+  group: "trader"
+  # 目录权限
+  permissions:
+    config_dir: "600"
+    log_dir: "755"
+    data_dir: "700"
+    backup_dir: "700"
+  # 系统服务
+  systemd_service: true
+  service_name: "lighter-trading"
+  # 进程管理
+  process_management: "systemd"
+  # 资源限制
+  resource_limits:
+    max_memory: "8G"
+    max_cpu: "4"
+    max_files: 65536
+
+# 合规配置
+compliance:
+  # 交易记录
+  trade_logging: true
+  # 审计跟踪
+  audit_trail: true
+  # 报告生成
+  reporting: true
+  # 数据保留
+  data_retention: "7y"
+  # 监管报告
+  regulatory_reporting: false
