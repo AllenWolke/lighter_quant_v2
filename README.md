@@ -196,3 +196,4 @@ Class | Method | HTTP request | Description
 [//]: # (Endpoints do not require authorization.)
 
 
+# lighter_quant_v2
