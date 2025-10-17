@@ -71,3 +71,4 @@ openapi-generator-cli.jar
 examples/secrets.py
 
 env
+.ssh
