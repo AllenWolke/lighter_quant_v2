@@ -43,7 +43,6 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
-venv/
 .venv/
 .python-version
 .pytest_cache
