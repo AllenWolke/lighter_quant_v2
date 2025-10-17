@@ -1,0 +1,268 @@
+# Windows测试环境配置文件
+# 适用于Windows系统的Lighter测试网部署
+
+# Lighter交易所配置
+lighter:
+  # 测试网地址
+  base_url: "https://testnet.zklighter.elliot.ai"
+  # 测试网私钥 (从system_setup.py获取)
+  api_key_private_key: "1234567812345678123456781234567812345678123456781234567812345678"
+  # API密钥索引
+  api_key_index: 3
+  # 账户索引
+  account_index: 0
+  # 链ID (测试网: 300, 主网: 304)
+  chain_id: 300
+
+# 交易配置
+trading:
+  # 主循环间隔（秒）
+  tick_interval: 2.0  # 测试网使用中等间隔
+  max_concurrent_strategies: 5  # 最大并发策略数
+  
+  # 交易市场配置
+  markets:
+    - symbol: "ETH"
+      market_id: 0
+      base_asset: "ETH"
+      quote_asset: "USDC"
+      min_order_size: 0.001
+      max_order_size: 100.0
+      tick_size: 0.01
+    
+    - symbol: "BTC"
+      market_id: 1
+      base_asset: "BTC"
+      quote_asset: "USDC"
+      min_order_size: 0.0001
+      max_order_size: 10.0
+      tick_size: 0.1
+
+  # 交易策略配置
+  strategies:
+    # 动量策略
+    momentum:
+      enabled: true
+      long_period: 20
+      short_period: 5
+      threshold: 0.02
+      leverage: 5.0
+      position_size: 0.1
+      max_orders: 10
+      order_timeout: 300
+    
+    # 均值回归策略
+    mean_reversion:
+      enabled: false
+      period: 14
+      threshold: 2.0
+      leverage: 3.0
+      position_size: 0.05
+      max_orders: 5
+      order_timeout: 300
+    
+    # 套利策略
+    arbitrage:
+      enabled: false
+      price_threshold: 0.01
+      min_profit: 0.005
+      leverage: 1.0
+      position_size: 0.02
+      max_orders: 3
+      order_timeout: 60
+    
+    # UT Bot策略
+    ut_bot:
+      enabled: false
+      atr_period: 14
+      atr_multiplier: 2.0
+      heikin_ashi_period: 5
+      leverage: 4.0
+      position_size: 0.08
+      max_orders: 8
+      order_timeout: 300
+
+# 风险管理配置
+risk_management:
+  # 最大仓位大小 (占总资金的百分比)
+  max_position_size: 0.2
+  # 最大日亏损限制
+  max_daily_loss: 0.05
+  # 最大回撤限制
+  max_drawdown: 0.15
+  # 止损百分比
+  stop_loss: 0.03
+  # 最大杠杆倍数
+  max_leverage: 10.0
+  # 单笔订单最大金额
+  max_order_value: 1000.0
+  # 最大同时持仓数量
+  max_concurrent_positions: 5
+
+# 数据源配置
+data_sources:
+  # Lighter数据源
+  lighter:
+    enabled: true
+    websocket_url: "wss://testnet.zklighter.elliot.ai/ws"
+    update_interval: 1  # 秒
+    max_retries: 5
+    retry_delay: 5
+  
+  # TradingView数据源
+  tradingview:
+    enabled: false  # Windows测试环境建议关闭
+    api_key: "your_tradingview_api_key"
+    update_interval: 5
+    max_retries: 3
+    retry_delay: 10
+
+# 通知配置
+notifications:
+  # 邮件通知
+  email:
+    enabled: true
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    use_tls: true
+    username: "your_email@gmail.com"
+    password: "your_app_password"
+    to_email: "recipient@gmail.com"
+    from_email: "your_email@gmail.com"
+    
+    # 通知类型
+    notify_on:
+      - trade_executed
+      - stop_loss_triggered
+      - daily_summary
+      - system_error
+      - risk_limit_exceeded
+  
+  # 日志通知
+  log:
+    enabled: true
+    level: "INFO"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# 日志配置
+logging:
+  # 日志级别
+  level: "INFO"
+  # 日志文件路径
+  file: "logs/windows_testnet_trading.log"
+  # 最大文件大小
+  max_size: "10MB"
+  # 备份文件数量
+  backup_count: 5
+  # 控制台输出
+  console: true
+  # 日志格式
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Web界面配置
+web:
+  # 后端配置
+  backend:
+    host: "localhost"
+    port: 8000
+    debug: true
+    reload: true
+  
+  # 前端配置
+  frontend:
+    host: "localhost"
+    port: 3000
+    api_url: "http://localhost:8000"
+  
+  # 数据库配置
+  database:
+    url: "sqlite:///data/testnet_trading.db"
+    echo: false
+    pool_size: 10
+    max_overflow: 20
+
+# 性能配置
+performance:
+  # 数据更新间隔 (秒)
+  data_update_interval: 1
+  # 策略执行间隔 (秒)
+  strategy_execution_interval: 5
+  # 最大并发任务数
+  max_concurrent_tasks: 10
+  # 内存使用限制 (MB)
+  memory_limit: 2048
+  # CPU使用限制 (%)
+  cpu_limit: 80
+
+# 测试配置
+testing:
+  # 模拟交易模式
+  paper_trading: true
+  # 模拟资金
+  paper_balance: 10000.0
+  # 测试数据源
+  use_mock_data: false
+  # 回测模式
+  backtest_mode: false
+  # 压力测试
+  stress_test: false
+
+# 开发配置
+development:
+  # 调试模式
+  debug: true
+  # 详细日志
+  verbose_logging: true
+  # 性能分析
+  profiling: false
+  # 热重载
+  hot_reload: true
+  # 开发工具
+  dev_tools: true
+
+# Windows特定配置
+windows:
+  # 编码设置
+  encoding: "utf-8"
+  # 路径分隔符
+  path_separator: "\\"
+  # 临时目录
+  temp_dir: "C:\\temp\\lighter_trading"
+  # 日志目录
+  log_dir: "logs"
+  # 数据目录
+  data_dir: "data"
+  # 配置目录
+  config_dir: "config"
+
+# 安全配置
+security:
+  # 私钥加密
+  encrypt_private_keys: false
+  # 配置文件加密
+  encrypt_config: false
+  # 日志脱敏
+  log_sanitization: true
+  # API密钥轮换
+  key_rotation: false
+  # 访问控制
+  access_control: false
+
+# 监控配置
+monitoring:
+  # 系统监控
+  system_monitoring: true
+  # 性能监控
+  performance_monitoring: true
+  # 错误监控
+  error_monitoring: true
+  # 健康检查
+  health_check: true
+  # 指标收集
+  metrics_collection: true
+  # 告警阈值
+  alert_thresholds:
+    cpu_usage: 80
+    memory_usage: 85
+    disk_usage: 90
+    error_rate: 5

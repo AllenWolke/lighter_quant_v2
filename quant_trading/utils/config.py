@@ -55,6 +55,21 @@ class Config:
         """获取Lighter API密钥索引"""
         return self.lighter_config.get("api_key_index", 0)
     
+    @property
+    def trading(self) -> Dict[str, Any]:
+        """获取交易配置（便捷访问）"""
+        return self.trading_config
+    
+    @property
+    def risk_management(self) -> Dict[str, Any]:
+        """获取风险管理配置（便捷访问）"""
+        return self.risk_config
+    
+    @property
+    def notifications(self) -> Dict[str, Any]:
+        """获取通知配置（便捷访问）"""
+        return self.notifications_config
+    
     @classmethod
     def from_file(cls, config_path: str) -> 'Config':
         """
@@ -75,12 +90,12 @@ class Config:
         return cls(
             lighter_config=config_data.get("lighter", {}),
             trading_config=config_data.get("trading", {}),
-            risk_config=config_data.get("risk", {}),
+            risk_config=config_data.get("risk_management", config_data.get("risk", {})),
             notifications_config=config_data.get("notifications", {}),
             data_sources=config_data.get("data_sources", {}),
             strategies=config_data.get("strategies", {}),
-            log_level=config_data.get("log", {}).get("level", "INFO"),
-            log_file=config_data.get("log", {}).get("file")
+            log_level=config_data.get("logging", config_data.get("log", {})).get("level", "INFO"),
+            log_file=config_data.get("logging", config_data.get("log", {})).get("file")
         )
         
     @classmethod
@@ -98,6 +113,9 @@ class Config:
             lighter_config=config_dict.get("lighter", {}),
             trading_config=config_dict.get("trading", {}),
             risk_config=config_dict.get("risk", {}),
+            notifications_config=config_dict.get("notifications", {}),
+            data_sources=config_dict.get("data_sources", {}),
+            strategies=config_dict.get("strategies", {}),
             log_level=config_dict.get("log", {}).get("level", "INFO"),
             log_file=config_dict.get("log", {}).get("file")
         )
@@ -107,7 +125,10 @@ class Config:
         return {
             "lighter": self.lighter_config,
             "trading": self.trading_config,
-            "risk": self.risk_config,
+            "risk_management": self.risk_config,
+            "notifications": self.notifications_config,
+            "data_sources": self.data_sources,
+            "strategies": self.strategies,
             "log": {
                 "level": self.log_level,
                 "file": self.log_file
@@ -151,5 +172,15 @@ class Config:
                 "max_orders_per_minute": 10,
                 "max_open_orders": 20
             },
+            notifications_config={
+                "enabled": False,
+                "email": {
+                    "enabled": False
+                }
+            },
+            data_sources={
+                "primary": "lighter"
+            },
+            strategies={},
             log_level="INFO"
         )

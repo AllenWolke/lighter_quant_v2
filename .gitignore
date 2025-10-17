@@ -69,3 +69,5 @@ openapi-generator-cli.jar
 .idea
 
 examples/secrets.py
+
+env

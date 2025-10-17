@@ -5,7 +5,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt  # 直接使用 bcrypt，避免 passlib 兼容性问题
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -14,21 +14,58 @@ from core.config import settings
 from core.database import get_db
 from models.user import User
 
-# 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 # JWT认证
 security = HTTPBearer()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """验证密码（使用 bcrypt 直接验证）"""
+    try:
+        # 确保密码和哈希都是正确的格式
+        if not isinstance(plain_password, str):
+            plain_password = str(plain_password)
+        if not isinstance(hashed_password, str):
+            hashed_password = str(hashed_password)
+        
+        # 截断密码为 72 字节
+        password_bytes = plain_password.encode('utf-8')[:72]
+        hashed_bytes = hashed_password.encode('utf-8')
+        
+        # 使用 bcrypt 验证
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
+    except Exception as e:
+        print(f"密码验证错误: {e}")
+        return False
 
 
 def get_password_hash(password: str) -> str:
-    """生成密码哈希"""
-    return pwd_context.hash(password)
+    """生成密码哈希（使用 bcrypt 直接生成）
+    
+    Args:
+        password: 原始密码字符串
+        
+    Returns:
+        BCrypt 哈希后的密码
+        
+    Note:
+        BCrypt 限制密码最多 72 字节。会自动截断超过此长度的密码。
+    """
+    # 确保密码是字符串类型
+    if not isinstance(password, str):
+        password = str(password)
+    
+    # 移除可能的前后空格
+    password = password.strip()
+    
+    # 截断密码为 72 字节（bcrypt 限制）
+    password_bytes = password.encode('utf-8')[:72]
+    
+    # 使用 bcrypt 直接生成哈希
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password_bytes, salt)
+    
+    # 返回字符串格式
+    return hashed.decode('utf-8')
 
 
 def authenticate_user(db: Session, username: str, password: str):

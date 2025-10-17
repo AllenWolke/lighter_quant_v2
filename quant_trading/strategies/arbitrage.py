@@ -17,7 +17,10 @@ class ArbitrageStrategy(BaseStrategy):
     """套利策略"""
     
     def __init__(self, config: Config, market_id_1: int = 0, market_id_2: int = 1,
-                 price_threshold: float = 0.01, max_position_size: float = 0.05):
+                 price_threshold: float = 0.01, max_position_size: float = 0.05,
+                 position_size: float = None,
+                 stop_loss: float = None,
+                 take_profit: float = None):
         """
         初始化套利策略
         
@@ -27,6 +30,9 @@ class ArbitrageStrategy(BaseStrategy):
             market_id_2: 第二个市场ID
             price_threshold: 价格差异阈值
             max_position_size: 最大仓位大小
+            position_size: 仓位大小（如果为None，从config读取）
+            stop_loss: 止损比例（如果为None，从config读取）
+            take_profit: 止盈比例（如果为None，从config读取）
         """
         super().__init__("Arbitrage", config)
         
@@ -35,10 +41,13 @@ class ArbitrageStrategy(BaseStrategy):
         self.price_threshold = price_threshold
         self.max_position_size = max_position_size
         
-        # 策略参数
-        self.position_size = 0.02  # 仓位大小
-        self.stop_loss = 0.005     # 止损比例
-        self.take_profit = 0.01    # 止盈比例
+        # 策略参数 - 优先使用传入的参数，否则从config读取
+        arb_config = config.strategies.get('arbitrage', {}) if hasattr(config, 'strategies') else {}
+        self.position_size_usd = position_size if position_size is not None else arb_config.get('position_size', 10.0)  # 改为USD金额
+        self.stop_loss = stop_loss if stop_loss is not None else arb_config.get('stop_loss', 0.005)
+        self.take_profit = take_profit if take_profit is not None else arb_config.get('take_profit', 0.01)
+        
+        self.logger.info(f"策略配置: position_size=${self.position_size_usd} USD (将根据市场价格自动计算加密货币数量)")
         
         # 状态变量
         self.last_signal_time = None
@@ -141,9 +150,16 @@ class ArbitrageStrategy(BaseStrategy):
                                        short_price: float, long_price: float, price_diff: float):
         """执行套利交易"""
         try:
+            # 将USD金额转换为实际的加密货币数量
+            short_size = self.position_size_usd / short_price
+            long_size = self.position_size_usd / long_price
+            self.logger.info(f"套利开仓计算:")
+            self.logger.info(f"  做空市场{short_market}: ${self.position_size_usd} USD ÷ ${short_price:.6f} = {short_size:.6f} 加密货币")
+            self.logger.info(f"  做多市场{long_market}: ${self.position_size_usd} USD ÷ ${long_price:.6f} = {long_size:.6f} 加密货币")
+            
             # 检查风险限制
-            if not (self._check_risk_limits(short_market, self.position_size, short_price) and
-                    self._check_risk_limits(long_market, self.position_size, long_price)):
+            if not (self._check_risk_limits(short_market, short_size, short_price) and
+                    self._check_risk_limits(long_market, long_size, long_price)):
                 return
                 
             # 创建做空订单
@@ -151,7 +167,7 @@ class ArbitrageStrategy(BaseStrategy):
                 market_id=short_market,
                 side="sell",
                 order_type="market",
-                size=self.position_size,
+                size=short_size,  # 使用计算后的实际数量
                 price=short_price
             )
             
@@ -160,7 +176,7 @@ class ArbitrageStrategy(BaseStrategy):
                 market_id=long_market,
                 side="buy",
                 order_type="market",
-                size=self.position_size,
+                size=long_size,  # 使用计算后的实际数量
                 price=long_price
             )
             
@@ -172,7 +188,9 @@ class ArbitrageStrategy(BaseStrategy):
                     "long_market": long_market,
                     "short_price": short_price,
                     "long_price": long_price,
-                    "size": self.position_size,
+                    "short_size": short_size,  # 记录实际数量
+                    "long_size": long_size,  # 记录实际数量
+                    "size_usd": self.position_size_usd,  # 记录USD金额
                     "entry_time": datetime.now(),
                     "price_diff": price_diff
                 }
@@ -180,7 +198,8 @@ class ArbitrageStrategy(BaseStrategy):
                 self._log_signal("ARBITRAGE_OPEN", arbitrage_id,
                                short_market=short_market, long_market=long_market,
                                short_price=short_price, long_price=long_price,
-                               price_diff=price_diff, size=self.position_size)
+                               price_diff=price_diff, size_usd=self.position_size_usd,
+                               short_size=short_size, long_size=long_size)
                 
                 self.last_signal_time = datetime.now()
                 
@@ -266,7 +285,7 @@ class ArbitrageStrategy(BaseStrategy):
             "market_id_2": self.market_id_2,
             "price_threshold": self.price_threshold,
             "max_position_size": self.max_position_size,
-            "position_size": self.position_size,
+            "position_size_usd": self.position_size_usd,  # 现在使用USD金额
             "stop_loss": self.stop_loss,
             "take_profit": self.take_profit,
             "signal_cooldown": self.signal_cooldown.total_seconds(),

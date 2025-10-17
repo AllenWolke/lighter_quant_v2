@@ -28,6 +28,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 // 状态管理
 import { useTradingStore } from '../store/tradingStore';
 import { useAuthStore } from '../store/authStore';
+import { useWebSocketStore } from '../store/websocketStore';
 
 // API
 import { tradingApi } from '../api';
@@ -56,6 +57,7 @@ const Dashboard: React.FC = () => {
   } = useTradingStore();
   
   const { user } = useAuthStore();
+  const { isConnected, connect, disconnect } = useWebSocketStore();
 
   // 模拟数据
   const [pnlData] = useState([
@@ -77,13 +79,32 @@ const Dashboard: React.FC = () => {
 
   // 初始化数据
   useEffect(() => {
-    loadDashboardData();
+    initializeDashboard();
+    
+    return () => {
+      // 清理时不断开连接，因为其他页面可能还在使用
+      // disconnect();
+    };
   }, []);
 
-  const loadDashboardData = async () => {
+  const initializeDashboard = async () => {
     try {
       setLoading(true);
       
+      // 连接 WebSocket
+      await connect();
+      
+      // 加载数据
+      await loadDashboardData();
+    } catch (error) {
+      console.error('初始化仪表板失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDashboardData = async () => {
+    try {
       const [accountData, statsData, positionsData, ordersData] = await Promise.all([
         tradingApi.getAccountInfo(),
         tradingApi.getTradingStats(),
@@ -97,8 +118,6 @@ const Dashboard: React.FC = () => {
       updateOrders(ordersData);
     } catch (error) {
       console.error('加载仪表板数据失败:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -137,6 +156,22 @@ const Dashboard: React.FC = () => {
           刷新数据
         </Button>
       </div>
+
+      {/* 连接状态警告 */}
+      {!isConnected && (
+        <Alert
+          message="连接断开"
+          description="WebSocket连接已断开，数据可能不是最新的。请检查网络连接或刷新页面。"
+          type="error"
+          showIcon
+          action={
+            <Button size="small" onClick={() => connect()}>
+              重新连接
+            </Button>
+          }
+          style={{ marginBottom: 24 }}
+        />
+      )}
 
       {/* 风险警告 */}
       {accountInfo && accountInfo.riskLevel === 'high' && (
@@ -306,26 +341,42 @@ const Dashboard: React.FC = () => {
               <Space direction="vertical" style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text type="secondary">可用余额</Text>
-                  <Text strong>{accountInfo?.availableBalance?.toFixed(2)} USDT</Text>
+                  <Text strong>
+                    {accountInfo?.availableBalance != null 
+                      ? accountInfo.availableBalance.toFixed(2) 
+                      : '0.00'} USDT
+                  </Text>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text type="secondary">保证金</Text>
-                  <Text strong>{accountInfo?.marginBalance?.toFixed(2)} USDT</Text>
+                  <Text strong>
+                    {accountInfo?.marginBalance != null 
+                      ? accountInfo.marginBalance.toFixed(2) 
+                      : '0.00'} USDT
+                  </Text>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text type="secondary">未实现盈亏</Text>
                   <Text strong style={{ 
-                    color: accountInfo?.unrealizedPnl && accountInfo.unrealizedPnl >= 0 ? '#52c41a' : '#ff4d4f' 
+                    color: (accountInfo?.unrealizedPnl || 0) >= 0 ? '#52c41a' : '#ff4d4f' 
                   }}>
-                    {accountInfo?.unrealizedPnl?.toFixed(2)} USDT
+                    {accountInfo?.unrealizedPnl != null 
+                      ? accountInfo.unrealizedPnl.toFixed(2) 
+                      : '0.00'} USDT
                   </Text>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Text type="secondary">保证金率</Text>
-                  <Text strong>{((accountInfo?.marginRatio || 0) * 100).toFixed(2)}%</Text>
+                  <Text strong>
+                    {accountInfo?.marginRatio != null 
+                      ? (accountInfo.marginRatio * 100).toFixed(2) 
+                      : '0.00'}%
+                  </Text>
                 </div>
                 <Progress 
-                  percent={(accountInfo?.marginRatio || 0) * 100} 
+                  percent={accountInfo?.marginRatio != null 
+                    ? accountInfo.marginRatio * 100 
+                    : 0} 
                   status={accountInfo?.riskLevel === 'high' ? 'exception' : 'normal'}
                   showInfo={false}
                 />

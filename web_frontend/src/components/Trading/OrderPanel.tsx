@@ -134,7 +134,7 @@ const OrderPanel: React.FC<OrderPanelProps> = ({ className }) => {
       key: 'quantity',
       width: 80,
       render: (quantity: number) => (
-        <Text style={{ fontSize: '12px' }}>{quantity.toFixed(4)}</Text>
+        <Text style={{ fontSize: '12px' }}>{quantity ? quantity.toFixed(4) : '0.0000'}</Text>
       ),
     },
     {
@@ -153,14 +153,18 @@ const OrderPanel: React.FC<OrderPanelProps> = ({ className }) => {
       dataIndex: 'filledQuantity',
       key: 'filledQuantity',
       width: 80,
-      render: (filled: number, record: Order) => (
-        <div style={{ fontSize: '12px' }}>
-          <div>{filled.toFixed(4)}</div>
-          <div style={{ color: '#8c8c8c', fontSize: '10px' }}>
-            {((filled / record.quantity) * 100).toFixed(1)}%
+      render: (filled: number, record: Order) => {
+        const safeFilled = filled || 0;
+        const safeQuantity = record.quantity || 1;
+        return (
+          <div style={{ fontSize: '12px' }}>
+            <div>{safeFilled.toFixed(4)}</div>
+            <div style={{ color: '#8c8c8c', fontSize: '10px' }}>
+              {((safeFilled / safeQuantity) * 100).toFixed(1)}%
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: '状态',

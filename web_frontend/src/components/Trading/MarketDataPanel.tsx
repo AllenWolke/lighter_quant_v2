@@ -105,7 +105,7 @@ const MarketDataPanel: React.FC<MarketDataPanelProps> = ({ className }) => {
       width: 100,
       render: (price: number) => (
         <Text strong style={{ fontSize: '12px' }}>
-          ${price.toFixed(2)}
+          ${price ? price.toFixed(2) : '0.00'}
         </Text>
       ),
     },
@@ -115,13 +115,14 @@ const MarketDataPanel: React.FC<MarketDataPanelProps> = ({ className }) => {
       key: 'changePercent24h',
       width: 100,
       render: (change: number) => {
-        const isPositive = change >= 0;
+        const safeChange = change || 0;
+        const isPositive = safeChange >= 0;
         return (
           <Tag 
             color={isPositive ? 'green' : 'red'}
             icon={isPositive ? <RiseOutlined /> : <FallOutlined />}
           >
-            {isPositive ? '+' : ''}{change.toFixed(2)}%
+            {isPositive ? '+' : ''}{safeChange.toFixed(2)}%
           </Tag>
         );
       },
@@ -133,7 +134,7 @@ const MarketDataPanel: React.FC<MarketDataPanelProps> = ({ className }) => {
       width: 120,
       render: (volume: number) => (
         <Text style={{ fontSize: '12px' }}>
-          {(volume / 1000000).toFixed(2)}M
+          {volume ? (volume / 1000000).toFixed(2) : '0.00'}M
         </Text>
       ),
     },

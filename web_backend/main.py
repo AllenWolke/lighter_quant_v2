@@ -131,8 +131,14 @@ async def health_check():
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket连接端点"""
-    await websocket_manager.connect(websocket)
+    # 生成唯一的客户端ID
+    import uuid
+    client_id = str(uuid.uuid4())
+    
     try:
+        # 建立连接
+        await websocket_manager.connect(websocket, client_id)
+        
         while True:
             # 接收客户端消息
             data = await websocket.receive_text()
@@ -141,24 +147,34 @@ async def websocket_endpoint(websocket: WebSocket):
             # 处理不同类型的消息
             if message.get("type") == "subscribe":
                 # 订阅数据更新
-                symbol = message.get("symbol")
-                timeframe = message.get("timeframe", "1m")
-                await websocket_manager.subscribe(websocket, symbol, timeframe)
+                channel = message.get("channel") or message.get("symbol")
+                if channel:
+                    await websocket_manager.subscribe(client_id, channel)
+                    await websocket.send_text(json.dumps({
+                        "type": "subscribed",
+                        "channel": channel
+                    }))
                 
             elif message.get("type") == "unsubscribe":
                 # 取消订阅
-                symbol = message.get("symbol")
-                await websocket_manager.unsubscribe(websocket, symbol)
+                channel = message.get("channel") or message.get("symbol")
+                if channel:
+                    await websocket_manager.unsubscribe(client_id, channel)
+                    await websocket.send_text(json.dumps({
+                        "type": "unsubscribed",
+                        "channel": channel
+                    }))
                 
             elif message.get("type") == "ping":
                 # 心跳检测
                 await websocket.send_text(json.dumps({"type": "pong"}))
                 
     except WebSocketDisconnect:
-        await websocket_manager.disconnect(websocket)
+        logging.info(f"WebSocket客户端断开连接: {client_id}")
+        await websocket_manager.disconnect(client_id)
     except Exception as e:
-        logging.error(f"WebSocket错误: {e}")
-        await websocket_manager.disconnect(websocket)
+        logging.error(f"WebSocket错误 ({client_id}): {e}")
+        await websocket_manager.disconnect(client_id)
 
 
 # 依赖注入

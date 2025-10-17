@@ -24,6 +24,7 @@ import {
   FallOutlined
 } from '@ant-design/icons';
 import { tradingApi, positionApi } from '../api';
+import { useWebSocketStore } from '../store/websocketStore';
 import { Trade, Order, Position } from '../types';
 
 const { Title, Text } = Typography;
@@ -43,6 +44,8 @@ const History: React.FC = () => {
     startDate: null as any,
     endDate: null as any,
   });
+  
+  const { isConnected, connect } = useWebSocketStore();
 
   // 加载交易历史
   const loadTrades = async () => {
@@ -118,6 +121,7 @@ const History: React.FC = () => {
 
   // 初始化加载
   useEffect(() => {
+    connect();  // 连接 WebSocket
     loadData();
   }, [activeTab, filters]);
 

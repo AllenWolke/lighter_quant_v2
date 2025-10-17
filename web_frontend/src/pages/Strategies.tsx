@@ -30,6 +30,7 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import { useTradingStore } from '../store/tradingStore';
+import { useWebSocketStore } from '../store/websocketStore';
 import { strategyApi } from '../api';
 import { Strategy, StrategyCreateRequest, StrategyUpdateRequest } from '../types';
 
@@ -42,6 +43,8 @@ const Strategies: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
   const [form] = Form.useForm();
+  
+  const { isConnected, connect } = useWebSocketStore();
 
   // 加载策略列表
   const loadStrategies = async () => {
@@ -59,6 +62,7 @@ const Strategies: React.FC = () => {
 
   // 初始化加载
   useEffect(() => {
+    connect();  // 连接 WebSocket
     loadStrategies();
   }, []);
 
@@ -186,17 +190,24 @@ const Strategies: React.FC = () => {
       title: '统计信息',
       key: 'stats',
       width: 200,
-      render: (_: any, record: Strategy) => (
-        <div style={{ fontSize: '12px' }}>
-          <div>总交易: {record.totalTrades}</div>
-          <div>胜率: {record.winningTrades > 0 ? ((record.winningTrades / record.totalTrades) * 100).toFixed(1) : 0}%</div>
-          <div>总盈亏: 
-            <Text style={{ color: record.totalPnl >= 0 ? '#52c41a' : '#ff4d4f' }}>
-              {record.totalPnl >= 0 ? '+' : ''}${record.totalPnl.toFixed(2)}
-            </Text>
+      render: (_: any, record: Strategy) => {
+        const totalTrades = record.totalTrades || 0;
+        const winningTrades = record.winningTrades || 0;
+        const totalPnl = record.totalPnl || 0;
+        const winRate = totalTrades > 0 ? ((winningTrades / totalTrades) * 100).toFixed(1) : '0.0';
+        
+        return (
+          <div style={{ fontSize: '12px' }}>
+            <div>总交易: {totalTrades}</div>
+            <div>胜率: {winRate}%</div>
+            <div>总盈亏: 
+              <Text style={{ color: totalPnl >= 0 ? '#52c41a' : '#ff4d4f' }}>
+                {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
+              </Text>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: '操作',

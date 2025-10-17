@@ -52,7 +52,8 @@ class TradingEngine:
         self.data_manager = DataManager(self.api_client, config)
         self.risk_manager = RiskManager(config)
         self.position_manager = PositionManager(config)
-        self.order_manager = OrderManager(self.signer_client, config, self.notification_manager)
+        # OrderManager需要data_manager来进行价格滑点检查
+        self.order_manager = OrderManager(self.signer_client, config, self.notification_manager, self.data_manager)
         
         # 策略列表
         self.strategies: List[BaseStrategy] = []
@@ -116,6 +117,31 @@ class TradingEngine:
         
         self.logger.info("交易引擎已停止")
         
+    async def _test_connection(self):
+        """测试 Lighter 连接"""
+        try:
+            # 测试 API 连接 - 获取市场列表
+            from lighter.api.order_api import OrderApi
+            order_api = OrderApi(self.api_client)
+            markets = await order_api.order_books()
+            
+            if markets and hasattr(markets, 'order_books'):
+                market_count = len(markets.order_books)
+                self.logger.info(f"连接测试成功 - 发现 {market_count} 个市场")
+            
+            # 测试 Signer 认证
+            err = self.signer_client.check_client()
+            if err is not None:
+                self.logger.error(f"Signer 认证失败: {err}")
+                return False
+            
+            self.logger.info("Signer 认证测试通过")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"连接测试失败: {e}")
+            return False
+    
     async def _initialize_modules(self):
         """初始化各个模块"""
         self.logger.info("初始化模块...")
@@ -142,10 +168,40 @@ class TradingEngine:
         """主循环"""
         self.logger.info("进入主循环...")
         
+        # 连接健康检查计数器
+        loop_count = 0
+        connection_check_interval = 100  # 每100次循环检查一次连接（约5分钟，如果tick_interval=3秒）
+        
         while self.is_running:
             try:
-                # 获取市场数据
-                market_data = await self.data_manager.get_latest_data()
+                # 定期测试连接健康状态
+                loop_count += 1
+                if loop_count % connection_check_interval == 0:
+                    self.logger.info("执行定期连接健康检查...")
+                    connection_ok = await self._test_connection()
+                    if not connection_ok:
+                        self.logger.error("连接健康检查失败，系统将继续运行但可能无法交易")
+                        # 发送通知
+                        if self.notification_manager:
+                            await self.notification_manager.send_system_error(
+                                error_type="connection_check_failed",
+                                message="定期连接检查失败，请检查网络和配置"
+                            )
+                    else:
+                        self.logger.info("连接健康检查通过")
+                
+                # 收集所有策略使用的市场ID
+                strategy_markets = set()
+                for strategy in self.strategies:
+                    if hasattr(strategy, 'market_id'):
+                        strategy_markets.add(strategy.market_id)
+                    if hasattr(strategy, 'market_id_1'):
+                        strategy_markets.add(strategy.market_id_1)
+                    if hasattr(strategy, 'market_id_2'):
+                        strategy_markets.add(strategy.market_id_2)
+                
+                # 获取市场数据（包含所有策略使用的市场）
+                market_data = await self.data_manager.get_latest_data(extra_markets=list(strategy_markets))
                 
                 # 风险检查
                 if not await self.risk_manager.check_risk_limits(market_data):

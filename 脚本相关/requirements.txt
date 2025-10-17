@@ -1,0 +1,71 @@
+# Lighter量化交易程序依赖包
+
+# ==========================================
+# 注意：lighter 1.0.0 已包含在项目源码中
+# 位置：lighter/ 目录
+# 无需从PyPI安装
+# ==========================================
+
+# 核心依赖
+# lighter>=1.0.0  # 项目自带源码，无需pip安装
+asyncio
+aiohttp>=3.8.0
+aiohttp-retry>=2.8.3
+websockets>=10.0
+
+# 以太坊账户管理
+eth-account>=0.13.0
+
+# 数据验证
+pydantic>=2.0.0
+
+# 数据处理
+numpy>=1.23.0
+pandas>=1.5.0
+
+# 数学计算
+scipy>=1.9.0
+
+# 配置管理
+PyYAML>=6.0
+
+# 日志
+colorlog>=6.0.0
+
+# 通知功能
+# smtplib 是Python内置模块，无需额外安装
+
+# GUI界面依赖（可选，用于桌面GUI）
+# PyQt6>=6.4.0
+# PyQt6-WebEngine>=6.4.0
+# PySide6>=6.4.0
+
+# 图表库（可选）
+# mplfinance>=0.12.0
+# plotly>=5.0.0
+# pyqtgraph>=0.13.0
+
+# 技术指标（可选，需要单独安装TA-Lib C库）
+# ta-lib>=0.4.0
+
+# GUI主题和图标（可选）
+# qdarkstyle>=3.0.0
+# qtawesome>=1.2.0
+
+# 网络通信
+requests>=2.28.0
+
+# 可视化（可选）
+# matplotlib>=3.5.0
+
+# 测试（可选）
+# pytest>=7.0.0
+# pytest-asyncio>=0.21.0
+
+# 开发工具（可选）
+# black>=22.0.0
+# flake8>=4.0.0
+# mypy>=0.950
+
+# TradingView数据源（可选）
+# tradingview-ta>=3.3.0

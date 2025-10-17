@@ -144,3 +144,18 @@ async def stop_strategy(
 ):
     """停止策略"""
     return {"message": "策略停止成功"}
+
+
+@router.post("/{strategy_id}/toggle")
+async def toggle_strategy(
+    strategy_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """切换策略启用/禁用状态"""
+    # 模拟切换策略状态
+    return {
+        "message": "策略状态已切换",
+        "strategy_id": strategy_id,
+        "is_enabled": True
+    }

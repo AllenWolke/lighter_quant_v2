@@ -2,25 +2,28 @@
 
 # Lighter交易所配置
 lighter:
-  base_url: "https://testnet.zklighter.elliot.ai"  # 测试网地址
-  # base_url: "https://mainnet.zklighter.elliot.ai"  # 主网地址
-  api_key_private_key: ""  # API密钥私钥，需要从lighter交易所获取
+  # base_url: "https://testnet.zklighter.elliot.ai"  # 测试网地址
+  base_url: "https://mainnet.zklighter.elliot.ai"  # 主网地址
+  api_key_private_key: "YOUR_MAINNET_PRIVATE_KEY_HERE"  # API密钥私钥，需要从lighter交易所获取
   account_index: 0  # 账户索引
   api_key_index: 0  # API密钥索引
+  chain_id: 304  # 主网链ID
 
 # 交易配置
 trading:
-  tick_interval: 1.0  # 主循环间隔（秒）
+  tick_interval: 3.0  # 主循环间隔（秒）- 主网使用较大间隔避免限流
   max_concurrent_strategies: 5  # 最大并发策略数
 
 # 风险管理配置
-risk:
-  max_position_size: 0.1  # 最大仓位比例（10%）
-  max_daily_loss: 0.05    # 最大日亏损比例（5%）
-  max_drawdown: 0.15      # 最大回撤比例（15%）
-  max_leverage: 10.0      # 最大杠杆倍数
-  max_orders_per_minute: 10  # 每分钟最大订单数
-  max_open_orders: 20     # 最大开仓订单数
+risk_management:
+  max_position_size: 0.05  # 最大仓位比例（5%）- 主网更保守
+  max_daily_loss: 0.02     # 最大日亏损比例（2%）- 主网更保守
+  max_drawdown: 0.10       # 最大回撤比例（10%）- 主网更保守
+  max_leverage: 3.0        # 最大杠杆倍数 - 主网降低杠杆
+  max_orders_per_minute: 5 # 每分钟最大订单数 - 主网降低频率
+  max_open_orders: 10      # 最大开仓订单数 - 主网更保守
+  stop_loss_percent: 0.02  # 止损百分比（2%）
+  take_profit_percent: 0.05 # 止盈百分比（5%）
 
 # 日志配置
 log:
@@ -30,13 +33,210 @@ log:
 # 数据源配置
 data_sources:
   primary: "lighter"  # 主数据源: lighter, tradingview
+  # 注意: 如果无法访问Binance（中国大陆网络），建议使用lighter
+  # Lighter API提供真实交易所数据，且已优化避免限流
+  
+  # 额外需要监控的市场（可选）
+  extra_markets: [2, 3]  # 添加市场2 (SOL), 市场3 (DOGE)
+  
+  # 自定义市场最小购入数量（覆盖API返回的min_base_amount）
+  # 如果API返回的min_base_amount不准确，可在此处手动设置
+  custom_min_order_size:
+    0: 0.005   # ETH: 最小0.005个
+    1: 0.0002  # BTC: 最小0.0002个
+    2: 0.05    # SOL: 最小0.05个
+    3: 1       # DOGE: 最小1个（用户确认的实际值）⭐
+    # 其他市场可根据需要添加
+  
+  # 自定义市场最小报价金额（覆盖API返回的min_quote_amount）
+  # 如果API返回的min_quote_amount不准确，可在此处手动设置
+  custom_min_quote_amount:
+    3: 0.1  # DOGE: 最小报价$0.1（如果实际不是$10，请根据测试结果调整）⭐
+    # 其他市场可根据需要添加
+    # 如果不确定，建议先测试后再设置
+  
+  # ⭐ 需求①②：多市场滑点配置
+  # 每个市场可以单独配置是否开启滑点检测和滑点范围
+  market_slippage_config:
+    0:  # ETH
+      enabled: true      # 是否开启滑点检测
+      tolerance: 0.01    # 滑点容忍度 (1%)
+    1:  # BTC  
+      enabled: true      # 是否开启滑点检测
+      tolerance: 0.005   # 滑点容忍度 (0.5%)
+    2:  # SOL
+      enabled: false     # 关闭滑点检测，直接市价成交
+      tolerance: 0.02    # 如果开启，滑点容忍度 (2%)
+    3:  # DOGE
+      enabled: true      # 是否开启滑点检测
+      tolerance: 0.03    # 滑点容忍度 (3%)，DOGE波动较大
+    # 其他市场默认使用策略级别的price_slippage_tolerance
+  
+  # ⭐ 新需求：多市场止盈止损配置
+  # 每个市场可以单独配置止盈和止损百分比，以及是否启用
+  market_risk_config:
+    0:  # ETH - 相对稳定，使用较小的止盈止损
+      stop_loss_enabled: true   # 是否开启止损
+      stop_loss: 0.15           # 止损百分比 (15%)
+      take_profit_enabled: true # 是否开启止盈
+      take_profit: 0.25         # 止盈百分比 (25%)
+    1:  # BTC - 相对稳定，使用较小的止盈止损
+      stop_loss_enabled: true   # 是否开启止损
+      stop_loss: 0.12           # 止损百分比 (12%)
+      take_profit_enabled: true # 是否开启止盈
+      take_profit: 0.20         # 止盈百分比 (20%)
+    2:  # SOL - 中等波动，使用中等止盈止损
+      stop_loss_enabled: true   # 是否开启止损
+      stop_loss: 0.20           # 止损百分比 (20%)
+      take_profit_enabled: false # 关闭止盈（示例）
+      take_profit: 0.30         # 止盈百分比 (30%) - 仅配置，不生效
+    3:  # DOGE - 高波动，使用较大的止盈止损
+      stop_loss_enabled: true   # 是否开启止损
+      stop_loss: 0.30           # 止损百分比 (30%) - 如用户需求示例
+      take_profit_enabled: true # 是否开启止盈
+      take_profit: 0.50         # 止盈百分比 (50%)
+    # 其他市场默认使用策略级别的stop_loss和take_profit
+  
   tradingview:
-    enabled: true  # 是否启用TradingView数据源
+    enabled: true  # 是否启用TradingView数据源（使用Binance API）
+    # 注意: 需要能访问api.binance.com，中国大陆可能需要VPN
     session_id: "qs_1"
     user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    symbol_mapping:  # 交易对映射
-      "BTC_USDT": "BTCUSDT"
-      "ETH_USDT": "ETHUSDT"
+    symbol_mapping:  # 交易对映射 (Lighter市场ID → TradingView符号)
+      # 主流币种 (Market ID 0-10)
+      "ETH_USDT": "ETHUSDT"        # Market ID: 0
+      "BTC_USDT": "BTCUSDT"        # Market ID: 1
+      "SOL_USDT": "SOLUSDT"        # Market ID: 2
+      "DOGE_USDT": "DOGEUSDT"      # Market ID: 3
+      "1000PEPE_USDT": "PEPEUSDT"  # Market ID: 4
+      "WIF_USDT": "WIFUSDT"        # Market ID: 5
+      "WLD_USDT": "WLDUSDT"        # Market ID: 6
+      "XRP_USDT": "XRPUSDT"        # Market ID: 7
+      "LINK_USDT": "LINKUSDT"      # Market ID: 8
+      "AVAX_USDT": "AVAXUSDT"      # Market ID: 9
+      "NEAR_USDT": "NEARUSDT"      # Market ID: 10
+      # Layer 1/2 (Market ID 11-20)
+      "DOT_USDT": "DOTUSDT"        # Market ID: 11
+      "TON_USDT": "TONUSDT"        # Market ID: 12
+      "TAO_USDT": "TAOUSDT"        # Market ID: 13
+      "POL_USDT": "POLUSDT"        # Market ID: 14 (原MATIC)
+      "TRUMP_USDT": "TRUMPUSDT"    # Market ID: 15
+      "SUI_USDT": "SUIUSDT"        # Market ID: 16
+      "1000SHIB_USDT": "SHIBUSDT"  # Market ID: 17
+      "1000BONK_USDT": "BONKUSDT"  # Market ID: 18
+      "1000FLOKI_USDT": "FLOKIUSDT" # Market ID: 19
+      "BERA_USDT": "BERAUSDT"      # Market ID: 20
+      # Meme/AI币种 (Market ID 21-30)
+      "FARTCOIN_USDT": "FARTCOINUSDT" # Market ID: 21
+      "AI16Z_USDT": "AI16ZUSDT"    # Market ID: 22
+      "POPCAT_USDT": "POPCATUSDT"  # Market ID: 23
+      "HYPE_USDT": "HYPEUSDT"      # Market ID: 24
+      "BNB_USDT": "BNBUSDT"        # Market ID: 25
+      "JUP_USDT": "JUPUSDT"        # Market ID: 26
+      "AAVE_USDT": "AAVEUSDT"      # Market ID: 27
+      "MKR_USDT": "MKRUSDT"        # Market ID: 28
+      "ENA_USDT": "ENAUSDT"        # Market ID: 29
+      "UNI_USDT": "UNIUSDT"        # Market ID: 30
+      # DeFi/其他 (Market ID 31-50)
+      "APT_USDT": "APTUSDT"        # Market ID: 31
+      "SEI_USDT": "SEIUSDT"        # Market ID: 32
+      "KAITO_USDT": "KAITOUSDT"    # Market ID: 33
+      "IP_USDT": "IPUSDT"          # Market ID: 34
+      "LTC_USDT": "LTCUSDT"        # Market ID: 35
+      "CRV_USDT": "CRVUSDT"        # Market ID: 36
+      "PENDLE_USDT": "PENDLEUSDT"  # Market ID: 37
+      "ONDO_USDT": "ONDOUSDT"      # Market ID: 38
+      "ADA_USDT": "ADAUSDT"        # Market ID: 39
+      "S_USDT": "SUSDT"            # Market ID: 40
+      "VIRTUAL_USDT": "VIRTUALUSDT" # Market ID: 41
+      "SPX_USDT": "SPXUSDT"        # Market ID: 42
+      "TRX_USDT": "TRXUSDT"        # Market ID: 43
+      "SYRUP_USDT": "SYRUPUSDT"    # Market ID: 44
+      "PUMP_USDT": "PUMPUSDT"      # Market ID: 45
+      "LDO_USDT": "LDOUSDT"        # Market ID: 46
+      "PENGU_USDT": "PENGUUSDT"    # Market ID: 47
+      "PAXG_USDT": "PAXGUSDT"      # Market ID: 48
+      "EIGEN_USDT": "EIGENUSDT"    # Market ID: 49
+      "ARB_USDT": "ARBUSDT"        # Market ID: 50
+      # 新币种 (Market ID 51-70)
+      "RESOLV_USDT": "RESOLVUSDT"  # Market ID: 51
+      "GRASS_USDT": "GRASSUSDT"    # Market ID: 52
+      "ZORA_USDT": "ZORAUSDT"      # Market ID: 53
+      "LAUNCHCOIN_USDT": "LAUNCHCOINUSDT" # Market ID: 54
+      "OP_USDT": "OPUSDT"          # Market ID: 55
+      "ZK_USDT": "ZKUSDT"          # Market ID: 56
+      "PROVE_USDT": "PROVEUSDT"    # Market ID: 57
+      "BCH_USDT": "BCHUSDT"        # Market ID: 58
+      "HBAR_USDT": "HBARUSDT"      # Market ID: 59
+      "ZRO_USDT": "ZROUSDT"        # Market ID: 60
+      "GMX_USDT": "GMXUSDT"        # Market ID: 61
+      "DYDX_USDT": "DYDXUSDT"      # Market ID: 62
+      "MNT_USDT": "MNTUSDT"        # Market ID: 63
+      "ETHFI_USDT": "ETHFIUSDT"    # Market ID: 64
+      "AERO_USDT": "AEROUSDT"      # Market ID: 65
+      "USELESS_USDT": "USELESSUSDT" # Market ID: 66
+      "TIA_USDT": "TIAUSDT"        # Market ID: 67
+      "MORPHO_USDT": "MORPHOUSDT"  # Market ID: 68
+      "VVV_USDT": "VVVUSDT"        # Market ID: 69
+      "YZY_USDT": "YZYUSDT"        # Market ID: 70
+      # 最新币种 (Market ID 71-91)
+      "XPL_USDT": "XPLUSDT"        # Market ID: 71
+      "WLFI_USDT": "WLFIUSDT"      # Market ID: 72
+      "CRO_USDT": "CROUSDT"        # Market ID: 73
+      "NMR_USDT": "NMRUSDT"        # Market ID: 74
+      "DOLO_USDT": "DOLOUSDT"      # Market ID: 75
+      "LINEA_USDT": "LINEAUSDT"    # Market ID: 76
+      "XMR_USDT": "XMRUSDT"        # Market ID: 77
+      "PYTH_USDT": "PYTHUSDT"      # Market ID: 78
+      "SKY_USDT": "SKYUSDT"        # Market ID: 79
+      "MYX_USDT": "MYXUSDT"        # Market ID: 80
+      "1000TOSHI_USDT": "TOSHIUSDT" # Market ID: 81
+      "AVNT_USDT": "AVNTUSDT"      # Market ID: 82
+      "ASTER_USDT": "ASTERUSDT"    # Market ID: 83
+      "0G_USDT": "0GUSDT"          # Market ID: 84
+      "STBL_USDT": "STBLUSDT"      # Market ID: 85
+      "APEX_USDT": "APEXUSDT"      # Market ID: 86
+      "FF_USDT": "FFUSDT"          # Market ID: 87
+      "2Z_USDT": "2ZUSDT"          # Market ID: 88
+      "EDEN_USDT": "EDENUSDT"      # Market ID: 89
+      "ZEC_USDT": "ZECUSDT"        # Market ID: 90
+      "MON_USDT": "MONUSDT"        # Market ID: 91
+  
+  # 市场ID映射 (便于策略配置时查看)
+  market_id_mapping:
+    0: "ETH"    # 以太坊
+    1: "BTC"    # 比特币
+    2: "SOL"    # Solana
+    3: "DOGE"   # 狗狗币
+    4: "1000PEPE" # PEPE (1000倍)
+    5: "WIF"    # Dogwifhat
+    6: "WLD"    # Worldcoin
+    7: "XRP"    # Ripple
+    8: "LINK"   # Chainlink
+    9: "AVAX"   # Avalanche
+    10: "NEAR"  # NEAR Protocol
+    11: "DOT"   # Polkadot
+    12: "TON"   # Toncoin
+    13: "TAO"   # Bittensor
+    14: "POL"   # Polygon (原MATIC)
+    15: "TRUMP" # Trump Coin
+    16: "SUI"   # Sui
+    17: "1000SHIB" # SHIB (1000倍)
+    18: "1000BONK" # BONK (1000倍)
+    19: "1000FLOKI" # FLOKI (1000倍)
+    20: "BERA"  # Berachain
+    25: "BNB"   # Binance Coin
+    30: "UNI"   # Uniswap
+    35: "LTC"   # Litecoin
+    39: "ADA"   # Cardano
+    43: "TRX"   # TRON
+    50: "ARB"   # Arbitrum
+    55: "OP"    # Optimism
+    58: "BCH"   # Bitcoin Cash
+    61: "GMX"   # GMX
+    62: "DYDX"  # dYdX
+    77: "XMR"   # Monero
+    90: "ZEC"   # Zcash
 
 # 通知配置
 notifications:
@@ -70,15 +270,21 @@ notifications:
     allowed_types: []  # 允许的通知类型，空表示全部
 
 # 策略配置
+# 注意: position_size现在使用USD金额，系统会自动根据市场价格计算实际的加密货币数量
 strategies:
   mean_reversion:
     enabled: true
     market_id: 0
     lookback_period: 20
     threshold: 2.0
-    position_size: 0.1
+    position_size: 10.0  # $10 USD (系统会自动计算实际ETH数量)
     stop_loss: 0.02
     take_profit: 0.01
+    leverage: 1.0  # 杠杆倍数 (1.0 = 不使用杠杆)
+    margin_mode: cross  # 保证金模式: cross (全仓) 或 isolated (逐仓)
+    order_type: market  # 订单类型: market (市价单) 或 limit (限价单)
+    limit_price_offset: 0.001  # 限价单价格偏移 (0.1%)，仅order_type=limit时有效
+    price_slippage_tolerance: 0.01  # 价格滑点容忍度 (1%)，避免滑点过大导致成交价不利 ⭐
     
   momentum:
     enabled: true
@@ -86,25 +292,57 @@ strategies:
     short_period: 5
     long_period: 20
     momentum_threshold: 0.02
-    position_size: 0.1
+    position_size: 10.0  # $10 USD (系统会自动计算实际ETH数量)
     stop_loss: 0.03
     take_profit: 0.05
+    leverage: 1.0  # 杠杆倍数 (1.0 = 不使用杠杆)
+    margin_mode: cross  # 保证金模式: cross (全仓) 或 isolated (逐仓)
+    order_type: market  # 订单类型: market (市价单) 或 limit (限价单)
+    limit_price_offset: 0.001  # 限价单价格偏移 (0.1%)
+    price_slippage_tolerance: 0.01  # 价格滑点容忍度 (1%) ⭐
     
   arbitrage:
     enabled: true
     market_id_1: 0
     market_id_2: 1
     price_threshold: 0.01
-    position_size: 0.02
+    position_size: 10.0  # $10 USD (系统会自动计算实际数量)
     stop_loss: 0.005
     take_profit: 0.01
+    leverage: 1.0  # 杠杆倍数 (1.0 = 不使用杠杆)
+    margin_mode: cross  # 保证金模式: cross (全仓) 或 isolated (逐仓)
+    order_type: market  # 订单类型: market (市价单) 或 limit (限价单)
+    limit_price_offset: 0.001  # 限价单价格偏移 (0.1%)
+    price_slippage_tolerance: 0.005  # 价格滑点容忍度 (0.5%)，套利策略对滑点更敏感 ⭐
     
   ut_bot:
-    enabled: true
-    market_id: 0
+    enabled: true  # 启用
+    market_id: 3  # 使用市场3 (DOGE)
+    # 支持多市场交易（需求②）
+    market_ids: [3, 2, 0]  # DOGE, SOL, ETH - 可同时交易多个市场 ⭐
     key_value: 1.0
     atr_period: 10
     use_heikin_ashi: false
-    position_size: 0.1
+    position_size: 2.0  # $2.0 USD (DOGE价格$0.21时 = 约9.5 DOGE)
     stop_loss: 0.02
     take_profit: 0.01
+    leverage: 10.0  # 10倍杠杆
+    margin_mode: isolated  # 保证金模式: isolated (逐仓模式)
+    order_type: market  # 订单类型: market (市价单) 或 limit (限价单)
+    limit_price_offset: 0.002  # 限价单价格偏移 (0.2%)，买入略低/卖出略高
+    price_slippage_tolerance: 0.02  # 价格滑点容忍度 (2%)，DOGE波动较大可设置更高
+    # 多时间周期确认（需求①）
+    enable_multi_timeframe: true  # 启用5分钟+1分钟多时间周期确认 ⭐
+    # 多时间周期规则:
+    # - 5m-buy + 1m-buy → 开多仓
+    # - 5m-sell + 1m-sell → 开空仓  
+    # - 5m-buy + 1m-sell → 平多仓（不开空仓）
+    # - 5m-sell + 1m-buy → 平空仓（不开多仓）
+    
+    # ⭐ 需求③：K线完成确认
+    wait_for_kline_completion: true  # 等待1分钟K线走完后再交易
+    # K线完成确认规则:
+    # - 检测到信号时不立即交易
+    # - 等待当前1分钟K线走完
+    # - 确认最终信号后再交易
+    # - 避免K线中途信号变化

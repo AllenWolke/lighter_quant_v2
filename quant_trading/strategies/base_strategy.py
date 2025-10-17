@@ -131,22 +131,39 @@ class BaseStrategy(ABC):
         return self.engine.risk_manager.check_position_size(market_id, size, price)
         
     def _create_order(self, market_id: int, side: str, order_type: str, 
-                     size: float, price: float):
-        """创建订单"""
+                     size: float, price: float, leverage: float = 1.0,
+                     margin_mode: str = "cross", price_slippage_tolerance: float = None):
+        """
+        创建订单
+        
+        Args:
+            market_id: 市场ID
+            side: 订单方向 ("buy" 或 "sell")
+            order_type: 订单类型 ("market" 或 "limit")
+            size: 订单大小
+            price: 订单价格
+            leverage: 杠杆倍数，默认1倍（不使用杠杆）
+            margin_mode: 保证金模式 ("cross" 全仓 或 "isolated" 逐仓)，默认全仓
+            price_slippage_tolerance: 价格滑点容忍度（可选，策略可自定义）
+        """
         if not self.engine:
             return None
             
-        from ..core.order_manager import OrderSide, OrderType
+        from ..core.order_manager import OrderSide, OrderType, MarginMode
         
         order_side = OrderSide.BUY if side.lower() == "buy" else OrderSide.SELL
         order_type_enum = OrderType.MARKET if order_type.lower() == "market" else OrderType.LIMIT
+        margin_mode_enum = MarginMode.CROSS if margin_mode.lower() == "cross" else MarginMode.ISOLATED
         
         return self.engine.order_manager.create_order(
             market_id=market_id,
             side=order_side,
             order_type=order_type_enum,
             size=size,
-            price=price
+            price=price,
+            leverage=leverage,
+            margin_mode=margin_mode_enum,
+            price_slippage_tolerance=price_slippage_tolerance
         )
         
     def _get_position(self, market_id: int):

@@ -5,6 +5,7 @@ WebSocket管理器
 from typing import Dict, List, Set, Any, Callable
 import json
 import logging
+import asyncio
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -127,3 +128,45 @@ class WebSocketManager:
     async def get_subscriptions(self, client_id: str) -> Set[str]:
         """获取客户端的订阅列表"""
         return self.subscriptions.get(client_id, set())
+    
+    async def start(self):
+        """启动 WebSocket 管理器的后台任务"""
+        logger.info("WebSocket管理器已启动")
+        # 这里可以添加需要在后台运行的任务
+        # 例如：定期清理断开的连接、发送心跳等
+        try:
+            while True:
+                # 定期清理断开的连接
+                await asyncio.sleep(30)  # 每30秒检查一次
+                
+                # 清理已断开的连接
+                disconnected_clients = []
+                for client_id, websocket in list(self.active_connections.items()):
+                    try:
+                        # 发送 ping 检查连接是否活跃
+                        await websocket.send_text(json.dumps({"type": "ping"}))
+                    except:
+                        # 连接已断开
+                        disconnected_clients.append(client_id)
+                
+                # 移除断开的客户端
+                for client_id in disconnected_clients:
+                    await self.disconnect(client_id)
+                    
+        except asyncio.CancelledError:
+            logger.info("WebSocket管理器后台任务已取消")
+        except Exception as e:
+            logger.error(f"WebSocket管理器后台任务错误: {e}")
+    
+    async def stop(self):
+        """停止 WebSocket 管理器"""
+        logger.info("正在停止 WebSocket 管理器...")
+        
+        # 断开所有连接
+        for client_id in list(self.active_connections.keys()):
+            try:
+                await self.disconnect(client_id)
+            except:
+                pass
+        
+        logger.info("WebSocket管理器已停止")

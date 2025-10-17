@@ -3,6 +3,7 @@
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from core.database import Base
 
@@ -24,6 +25,13 @@ class User(Base):
     
     # 用户偏好设置
     preferences = Column(Text)  # JSON格式存储用户偏好
+    
+    # 关系
+    trades = relationship("Trade", back_populates="user", lazy="dynamic")
+    orders = relationship("Order", back_populates="user", lazy="dynamic")
+    strategies = relationship("Strategy", back_populates="user", lazy="dynamic")
+    positions = relationship("Position", back_populates="user", lazy="dynamic")
+    notifications = relationship("Notification", back_populates="user", lazy="dynamic")
     
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"

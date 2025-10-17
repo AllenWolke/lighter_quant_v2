@@ -1,0 +1,242 @@
+data_sources:
+  custom_min_order_size:
+    0: 0.005
+    1: 0.0002
+    2: 0.05
+    3: 1
+  custom_min_quote_amount:
+    3: 0.1
+  extra_markets:
+  - 2
+  - 3
+  market_id_mapping:
+    0: ETH
+    1: BTC
+    2: SOL
+    3: DOGE
+    4: 1000PEPE
+    5: WIF
+    6: WLD
+    7: XRP
+    8: LINK
+    9: AVAX
+    10: NEAR
+    11: DOT
+    12: TON
+    13: TAO
+    14: POL
+    15: TRUMP
+    16: SUI
+    17: 1000SHIB
+    18: 1000BONK
+    19: 1000FLOKI
+    20: BERA
+    25: BNB
+    30: UNI
+    35: LTC
+    39: ADA
+    43: TRX
+    50: ARB
+    55: OP
+    58: BCH
+    61: GMX
+    62: DYDX
+    77: XMR
+    90: ZEC
+  primary: lighter
+  tradingview:
+    enabled: true
+    session_id: qs_1
+    symbol_mapping:
+      0G_USDT: 0GUSDT
+      1000BONK_USDT: BONKUSDT
+      1000FLOKI_USDT: FLOKIUSDT
+      1000PEPE_USDT: PEPEUSDT
+      1000SHIB_USDT: SHIBUSDT
+      1000TOSHI_USDT: TOSHIUSDT
+      2Z_USDT: 2ZUSDT
+      AAVE_USDT: AAVEUSDT
+      ADA_USDT: ADAUSDT
+      AERO_USDT: AEROUSDT
+      AI16Z_USDT: AI16ZUSDT
+      APEX_USDT: APEXUSDT
+      APT_USDT: APTUSDT
+      ARB_USDT: ARBUSDT
+      ASTER_USDT: ASTERUSDT
+      AVAX_USDT: AVAXUSDT
+      AVNT_USDT: AVNTUSDT
+      BCH_USDT: BCHUSDT
+      BERA_USDT: BERAUSDT
+      BNB_USDT: BNBUSDT
+      BTC_USDT: BTCUSDT
+      CRO_USDT: CROUSDT
+      CRV_USDT: CRVUSDT
+      DOGE_USDT: DOGEUSDT
+      DOLO_USDT: DOLOUSDT
+      DOT_USDT: DOTUSDT
+      DYDX_USDT: DYDXUSDT
+      EDEN_USDT: EDENUSDT
+      EIGEN_USDT: EIGENUSDT
+      ENA_USDT: ENAUSDT
+      ETHFI_USDT: ETHFIUSDT
+      ETH_USDT: ETHUSDT
+      FARTCOIN_USDT: FARTCOINUSDT
+      FF_USDT: FFUSDT
+      GMX_USDT: GMXUSDT
+      GRASS_USDT: GRASSUSDT
+      HBAR_USDT: HBARUSDT
+      HYPE_USDT: HYPEUSDT
+      IP_USDT: IPUSDT
+      JUP_USDT: JUPUSDT
+      KAITO_USDT: KAITOUSDT
+      LAUNCHCOIN_USDT: LAUNCHCOINUSDT
+      LDO_USDT: LDOUSDT
+      LINEA_USDT: LINEAUSDT
+      LINK_USDT: LINKUSDT
+      LTC_USDT: LTCUSDT
+      MKR_USDT: MKRUSDT
+      MNT_USDT: MNTUSDT
+      MON_USDT: MONUSDT
+      MORPHO_USDT: MORPHOUSDT
+      MYX_USDT: MYXUSDT
+      NEAR_USDT: NEARUSDT
+      NMR_USDT: NMRUSDT
+      ONDO_USDT: ONDOUSDT
+      OP_USDT: OPUSDT
+      PAXG_USDT: PAXGUSDT
+      PENDLE_USDT: PENDLEUSDT
+      PENGU_USDT: PENGUUSDT
+      POL_USDT: POLUSDT
+      POPCAT_USDT: POPCATUSDT
+      PROVE_USDT: PROVEUSDT
+      PUMP_USDT: PUMPUSDT
+      PYTH_USDT: PYTHUSDT
+      RESOLV_USDT: RESOLVUSDT
+      SEI_USDT: SEIUSDT
+      SKY_USDT: SKYUSDT
+      SOL_USDT: SOLUSDT
+      SPX_USDT: SPXUSDT
+      STBL_USDT: STBLUSDT
+      SUI_USDT: SUIUSDT
+      SYRUP_USDT: SYRUPUSDT
+      S_USDT: SUSDT
+      TAO_USDT: TAOUSDT
+      TIA_USDT: TIAUSDT
+      TON_USDT: TONUSDT
+      TRUMP_USDT: TRUMPUSDT
+      TRX_USDT: TRXUSDT
+      UNI_USDT: UNIUSDT
+      USELESS_USDT: USELESSUSDT
+      VIRTUAL_USDT: VIRTUALUSDT
+      VVV_USDT: VVVUSDT
+      WIF_USDT: WIFUSDT
+      WLD_USDT: WLDUSDT
+      WLFI_USDT: WLFIUSDT
+      XMR_USDT: XMRUSDT
+      XPL_USDT: XPLUSDT
+      XRP_USDT: XRPUSDT
+      YZY_USDT: YZYUSDT
+      ZEC_USDT: ZECUSDT
+      ZK_USDT: ZKUSDT
+      ZORA_USDT: ZORAUSDT
+      ZRO_USDT: ZROUSDT
+    user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+lighter:
+  account_index: YOUR_ACCOUNT_INDEX
+  api_key_index: YOUR_INDEX
+  api_key_private_key: YOUR_PRIVATE_KEY
+  base_url: https://mainnet.zklighter.elliot.ai
+  chain_id: 304
+log:
+  file: logs/quant_trading.log
+  level: INFO
+notifications:
+  batch_interval: 60
+  batch_size: 5
+  email:
+    allowed_types: []
+    enabled: true
+    from_email: ''
+    min_level: info
+    password: ''
+    smtp_port: 587
+    smtp_server: smtp.gmail.com
+    to_emails: []
+    username: ''
+  enabled: true
+  rate_limits:
+    stop_loss:
+      max_count: 10
+      time_window: 300
+    system_error:
+      max_count: 5
+      time_window: 60
+    take_profit:
+      max_count: 10
+      time_window: 300
+    trade_executed:
+      max_count: 20
+      time_window: 300
+risk_management:
+  max_daily_loss: 0.02
+  max_drawdown: 0.1
+  max_leverage: 3.0
+  max_open_orders: 10
+  max_orders_per_minute: 5
+  max_position_size: 0.05
+  stop_loss_percent: 0.02
+  take_profit_percent: 0.05
+strategies:
+  arbitrage:
+    enabled: true
+    leverage: 1.0
+    limit_price_offset: 0.001
+    margin_mode: cross
+    market_id_1: 0
+    market_id_2: 1
+    order_type: market
+    position_size: 10.0
+    price_threshold: 0.01
+    stop_loss: 0.005
+    take_profit: 0.01
+  mean_reversion:
+    enabled: true
+    leverage: 1.0
+    limit_price_offset: 0.001
+    lookback_period: 20
+    margin_mode: cross
+    market_id: 0
+    order_type: market
+    position_size: 10.0
+    stop_loss: 0.02
+    take_profit: 0.01
+    threshold: 2.0
+  momentum:
+    enabled: true
+    leverage: 1.0
+    limit_price_offset: 0.001
+    long_period: 20
+    margin_mode: cross
+    market_id: 0
+    momentum_threshold: 0.02
+    order_type: market
+    position_size: 10.0
+    short_period: 5
+    stop_loss: 0.03
+    take_profit: 0.05
+  ut_bot:
+    atr_period: 10
+    enabled: true
+    key_value: 1.0
+    leverage: 10.0
+    limit_price_offset: 0.002
+    margin_mode: isolated
+    market_id: 3
+    order_type: market
+    position_size: 2
+    stop_loss: 0.02
+    take_profit: 0.01
+    use_heikin_ashi: false
+trading:
+  max_concurrent_strategies: 5
+  tick_interval: 3.0

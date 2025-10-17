@@ -1,0 +1,65 @@
+# Lighter量化交易程序完整依赖包
+# 包含所有功能的依赖（GUI、可视化、测试、开发工具等）
+
+# ==========================================
+# 注意：lighter 1.0.0 已包含在项目源码中
+# 位置：lighter/ 目录
+# 无需从PyPI安装
+# ==========================================
+
+# 核心依赖
+# lighter>=1.0.0  # 项目自带源码，无需pip安装
+asyncio
+aiohttp>=3.8.0
+aiohttp-retry>=2.8.3
+websockets>=10.0
+
+# 以太坊账户管理
+eth-account>=0.13.0
+
+# 数据验证
+pydantic>=2.0.0
+
+# 数据处理
+numpy>=1.23.0
+pandas>=1.5.0
+
+# 数学计算
+scipy>=1.9.0
+
+# 配置管理
+PyYAML>=6.0
+
+# 日志
+colorlog>=6.0.0
+
+# 网络通信
+requests>=2.28.0
+
+# GUI界面依赖
+PyQt6>=6.4.0
+PyQt6-WebEngine>=6.4.0
+
+# 图表库
+mplfinance>=0.12.10b0
+plotly>=5.0.0
+pyqtgraph>=0.13.0
+
+# GUI主题和图标
+qdarkstyle>=3.0.0
+qtawesome>=1.2.0
+
+# 可视化
+matplotlib>=3.5.0
+
+# TradingView数据源
+tradingview-ta>=3.3.0
+
+# 测试
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# 开发工具
+black>=22.0.0
+flake8>=4.0.0
+mypy>=0.950

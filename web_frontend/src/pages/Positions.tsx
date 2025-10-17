@@ -29,6 +29,7 @@ import {
   BarChartOutlined
 } from '@ant-design/icons';
 import { useTradingStore } from '../store/tradingStore';
+import { useWebSocketStore } from '../store/websocketStore';
 import { positionApi } from '../api';
 import { Position } from '../types';
 
@@ -47,6 +48,8 @@ const Positions: React.FC = () => {
     symbol: '',
     isActive: undefined as boolean | undefined,
   });
+  
+  const { isConnected, connect } = useWebSocketStore();
 
   // 加载持仓数据
   const loadPositions = async () => {
@@ -67,6 +70,12 @@ const Positions: React.FC = () => {
   };
 
   // 初始化加载
+  useEffect(() => {
+    connect();  // 连接 WebSocket
+    loadPositions();
+  }, []);
+  
+  // 监听筛选条件变化
   useEffect(() => {
     loadPositions();
   }, [filters]);
@@ -177,7 +186,7 @@ const Positions: React.FC = () => {
       key: 'quantity',
       width: 100,
       render: (quantity: number) => (
-        <Text>{quantity.toFixed(4)}</Text>
+        <Text>{quantity ? quantity.toFixed(4) : '0.0000'}</Text>
       ),
     },
     {
@@ -186,7 +195,7 @@ const Positions: React.FC = () => {
       key: 'entryPrice',
       width: 100,
       render: (price: number) => (
-        <Text>${price.toFixed(2)}</Text>
+        <Text>${price ? price.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -195,7 +204,7 @@ const Positions: React.FC = () => {
       key: 'currentPrice',
       width: 100,
       render: (price: number) => (
-        <Text>${price.toFixed(2)}</Text>
+        <Text>${price ? price.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -203,21 +212,25 @@ const Positions: React.FC = () => {
       dataIndex: 'unrealizedPnl',
       key: 'unrealizedPnl',
       width: 120,
-      render: (pnl: number, record: Position) => (
-        <div>
-          <Text 
-            style={{ 
-              color: pnl >= 0 ? '#52c41a' : '#ff4d4f',
-              fontWeight: 'bold'
-            }}
-          >
-            {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
-          </Text>
-          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-            {record.pnlRatio >= 0 ? '+' : ''}{record.pnlRatio.toFixed(2)}%
+      render: (pnl: number, record: Position) => {
+        const safePnl = pnl || 0;
+        const safeRatio = record.pnlRatio || 0;
+        return (
+          <div>
+            <Text 
+              style={{ 
+                color: safePnl >= 0 ? '#52c41a' : '#ff4d4f',
+                fontWeight: 'bold'
+              }}
+            >
+              {safePnl >= 0 ? '+' : ''}${safePnl.toFixed(2)}
+            </Text>
+            <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+              {safeRatio >= 0 ? '+' : ''}{safeRatio.toFixed(2)}%
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: '杠杆',
@@ -225,7 +238,7 @@ const Positions: React.FC = () => {
       key: 'leverage',
       width: 80,
       render: (leverage: number) => (
-        <Text>{leverage}x</Text>
+        <Text>{leverage || 1}x</Text>
       ),
     },
     {
@@ -234,7 +247,7 @@ const Positions: React.FC = () => {
       key: 'margin',
       width: 100,
       render: (margin: number) => (
-        <Text>${margin.toFixed(2)}</Text>
+        <Text>${margin ? margin.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -427,10 +440,10 @@ const Positions: React.FC = () => {
       </Card>
 
       {/* 风险警告 */}
-      {stats.averageLeverage > 5 && (
+      {(stats.averageLeverage || 0) > 5 && (
         <Alert
           message="高风险警告"
-          description={`平均杠杆为 ${stats.averageLeverage.toFixed(1)}x，建议降低杠杆以控制风险`}
+          description={`平均杠杆为 ${(stats.averageLeverage || 0).toFixed(1)}x，建议降低杠杆以控制风险`}
           type="warning"
           icon={<WarningOutlined />}
           showIcon

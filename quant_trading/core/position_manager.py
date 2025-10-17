@@ -77,12 +77,24 @@ class PositionManager:
     async def _load_existing_positions(self):
         """加载现有仓位"""
         try:
-            # 这里应该从交易所API获取现有仓位
-            # 暂时使用空实现
-            self.logger.info("加载现有仓位...")
+            # ⭐ 修复：从交易所API获取现有仓位
+            self.logger.info("正在从交易所加载现有仓位...")
+            
+            # 注意：这里需要访问API客户端，但PositionManager没有直接的API客户端引用
+            # 我们需要通过其他方式获取现有仓位信息
+            # 暂时先清空本地仓位缓存，让系统重新检测
+            self.positions.clear()
+            self.logger.info("已清空本地仓位缓存，系统将重新检测现有仓位")
+            
+            # TODO: 实现真正的API调用获取现有仓位
+            # 这需要访问lighter API的账户信息接口
+            # 例如：account_api.account() 获取账户详情，包括持仓信息
             
         except Exception as e:
             self.logger.error(f"加载现有仓位失败: {e}")
+            # 即使失败也清空缓存，避免使用过期的仓位信息
+            self.positions.clear()
+            self.logger.warning("已清空本地仓位缓存，避免使用过期信息")
             
     async def update_positions(self):
         """更新仓位信息"""

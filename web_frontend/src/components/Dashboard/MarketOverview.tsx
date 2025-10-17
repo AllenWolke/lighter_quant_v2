@@ -73,7 +73,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ className }) => {
       key: 'price',
       width: 100,
       render: (price: number) => (
-        <Text style={{ fontSize: '12px' }}>${price.toFixed(2)}</Text>
+        <Text style={{ fontSize: '12px' }}>${price ? price.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -82,14 +82,15 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ className }) => {
       key: 'changePercent24h',
       width: 100,
       render: (change: number) => {
-        const isPositive = change >= 0;
+        const safeChange = change || 0;
+        const isPositive = safeChange >= 0;
         return (
           <Tag 
             color={isPositive ? 'green' : 'red'}
             icon={isPositive ? <RiseOutlined /> : <FallOutlined />}
             style={{ fontSize: '10px' }}
           >
-            {isPositive ? '+' : ''}{change.toFixed(2)}%
+            {isPositive ? '+' : ''}{safeChange.toFixed(2)}%
           </Tag>
         );
       },
@@ -100,7 +101,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ className }) => {
       key: 'high24h',
       width: 100,
       render: (high: number) => (
-        <Text style={{ fontSize: '12px' }}>${high.toFixed(2)}</Text>
+        <Text style={{ fontSize: '12px' }}>${high ? high.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -109,7 +110,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ className }) => {
       key: 'low24h',
       width: 100,
       render: (low: number) => (
-        <Text style={{ fontSize: '12px' }}>${low.toFixed(2)}</Text>
+        <Text style={{ fontSize: '12px' }}>${low ? low.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -119,7 +120,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ className }) => {
       width: 120,
       render: (volume: number) => (
         <Text style={{ fontSize: '12px' }}>
-          {(volume / 1000000).toFixed(2)}M
+          {volume ? (volume / 1000000).toFixed(2) : '0.00'}M
         </Text>
       ),
     },

@@ -107,7 +107,7 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
       key: 'quantity',
       width: 80,
       render: (quantity: number) => (
-        <Text style={{ fontSize: '12px' }}>{quantity.toFixed(4)}</Text>
+        <Text style={{ fontSize: '12px' }}>{quantity ? quantity.toFixed(4) : '0.0000'}</Text>
       ),
     },
     {
@@ -116,7 +116,7 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
       key: 'entryPrice',
       width: 80,
       render: (price: number) => (
-        <Text style={{ fontSize: '12px' }}>${price.toFixed(2)}</Text>
+        <Text style={{ fontSize: '12px' }}>${price ? price.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -125,7 +125,7 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
       key: 'currentPrice',
       width: 80,
       render: (price: number) => (
-        <Text style={{ fontSize: '12px' }}>${price.toFixed(2)}</Text>
+        <Text style={{ fontSize: '12px' }}>${price ? price.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -134,7 +134,8 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
       key: 'unrealizedPnl',
       width: 80,
       render: (pnl: number) => {
-        const isPositive = pnl >= 0;
+        const safePnl = pnl || 0;
+        const isPositive = safePnl >= 0;
         return (
           <Text 
             style={{ 
@@ -143,7 +144,7 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
               fontWeight: '500'
             }}
           >
-            {isPositive ? '+' : ''}${pnl.toFixed(2)}
+            {isPositive ? '+' : ''}${safePnl.toFixed(2)}
           </Text>
         );
       },
@@ -154,7 +155,8 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
       key: 'pnlRatio',
       width: 70,
       render: (ratio: number) => {
-        const isPositive = ratio >= 0;
+        const safeRatio = ratio || 0;
+        const isPositive = safeRatio >= 0;
         return (
           <Text 
             style={{ 
@@ -163,7 +165,7 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
               fontWeight: '500'
             }}
           >
-            {isPositive ? '+' : ''}{ratio.toFixed(2)}%
+            {isPositive ? '+' : ''}{safeRatio.toFixed(2)}%
           </Text>
         );
       },
@@ -174,7 +176,7 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
       key: 'leverage',
       width: 50,
       render: (leverage: number) => (
-        <Text style={{ fontSize: '12px' }}>{leverage}x</Text>
+        <Text style={{ fontSize: '12px' }}>{leverage || 1}x</Text>
       ),
     },
     {
@@ -244,9 +246,9 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
               <div style={{ 
                 fontSize: '16px', 
                 fontWeight: 'bold',
-                color: stats.totalUnrealizedPnl >= 0 ? '#52c41a' : '#ff4d4f'
+                color: (stats.totalUnrealizedPnl || 0) >= 0 ? '#52c41a' : '#ff4d4f'
               }}>
-                {stats.totalUnrealizedPnl >= 0 ? '+' : ''}${stats.totalUnrealizedPnl.toFixed(2)}
+                {(stats.totalUnrealizedPnl || 0) >= 0 ? '+' : ''}${(stats.totalUnrealizedPnl || 0).toFixed(2)}
               </div>
             </div>
           </Col>
@@ -256,7 +258,7 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
             <div style={{ textAlign: 'center', padding: '8px' }}>
               <Text type="secondary" style={{ fontSize: '12px' }}>总保证金</Text>
               <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                ${stats.totalMargin.toFixed(2)}
+                ${(stats.totalMargin || 0).toFixed(2)}
               </div>
             </div>
           </Col>
@@ -264,7 +266,7 @@ const PositionPanel: React.FC<PositionPanelProps> = ({ className }) => {
             <div style={{ textAlign: 'center', padding: '8px' }}>
               <Text type="secondary" style={{ fontSize: '12px' }}>平均杠杆</Text>
               <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                {stats.averageLeverage.toFixed(1)}x
+                {(stats.averageLeverage || 1).toFixed(1)}x
               </div>
             </div>
           </Col>

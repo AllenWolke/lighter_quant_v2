@@ -1,0 +1,165 @@
+# 无域名生产环境配置示例
+# 适用于暂时没有域名，使用IP地址访问的场景
+
+# Lighter交易所配置
+lighter:
+  base_url: "https://mainnet.zklighter.elliot.ai"
+  api_key_private_key: "YOUR_MAINNET_PRIVATE_KEY_HERE"  # ⚠️ 请替换为您的实际私钥
+  api_key_index: 0
+  account_index: 0
+  chain_id: 304
+
+# 交易配置
+trading:
+  # 主循环间隔（秒）
+  tick_interval: 2.0  # 使用中等间隔避免API限流
+  max_concurrent_strategies: 5  # 最大并发策略数
+  
+  markets:
+    - symbol: "ETH"
+      market_id: 0
+      base_asset: "ETH"
+      quote_asset: "USDC"
+  
+  strategies:
+    momentum:
+      enabled: true
+      leverage: 3.0
+      position_size: 0.05
+
+# 严格的风险管理
+risk_management:
+  max_position_size: 0.1
+  max_daily_loss: 0.02
+  max_drawdown: 0.05
+  stop_loss: 0.02
+  max_leverage: 5.0
+
+# Web界面配置（无域名版本）
+web:
+  # 后端配置
+  backend:
+    host: "0.0.0.0"      # 监听所有接口
+    port: 8000
+    debug: false
+    reload: false
+    ssl_enabled: false   # ⚠️ 不使用SSL（无域名时）
+    # ssl_cert: ""       # 无域名时注释掉
+    # ssl_key: ""        # 无域名时注释掉
+  
+  # 前端配置
+  frontend:
+    host: "0.0.0.0"
+    port: 3000
+    api_url: "http://YOUR_SERVER_IP:8000"  # ⚠️ 请替换为实际IP
+    ssl_enabled: false   # 不使用SSL
+  
+  # 数据库配置
+  database:
+    url: "sqlite:///home/trader/data/mainnet_trading.db"
+    echo: false
+    pool_size: 20
+
+# 安全配置（无域名时的安全措施）
+security:
+  # 访问控制（必须启用）
+  access_control: true
+  allowed_ips:
+    - "127.0.0.1"           # 本地访问
+    - "192.168.1.0/24"      # 内网访问
+    - "YOUR_OFFICE_IP"      # ⚠️ 替换为您办公室的公网IP
+    - "YOUR_HOME_IP"        # ⚠️ 替换为您家里的公网IP
+  
+  # 强制认证
+  require_authentication: true
+  
+  # 双因素认证
+  two_factor_auth: true
+  
+  # 密码策略
+  password_policy:
+    min_length: 12
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special: true
+  
+  # 会话管理
+  session_timeout: 1800  # 30分钟超时
+  max_login_attempts: 3
+  lockout_duration: 3600
+  
+  # 日志审计
+  audit_logging: true
+  log_all_access: true
+  alert_on_failed_login: true
+  alert_on_unusual_ip: true
+
+# 通知配置
+notifications:
+  email:
+    enabled: true
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "your_email@gmail.com"
+    password: "your_app_password"
+    to_email: "admin@gmail.com"
+    
+    # 安全告警通知
+    notify_on:
+      - trade_executed
+      - stop_loss_triggered
+      - system_error
+      - unauthorized_access  # 未授权访问告警
+      - unusual_ip_access    # 异常IP访问告警
+      - failed_login         # 登录失败告警
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "/home/trader/logs/mainnet_trading.log"
+  max_size: "50MB"
+  backup_count: 10
+  
+  # 安全审计日志
+  audit:
+    enabled: true
+    file: "/home/trader/logs/security_audit.log"
+    log_access: true
+    log_failed_login: true
+    log_ip_changes: true
+
+# 监控配置
+monitoring:
+  # 系统监控
+  system_monitoring: true
+  
+  # 安全监控
+  security_monitoring: true
+  alert_on_unusual_login: true
+  alert_on_ip_change: true
+  alert_on_port_scan: true
+
+# 备份配置
+backup:
+  enabled: true
+  interval: "1h"
+  retention: "30d"
+  location: "/home/trader/backups"
+
+# 使用说明
+# 1. 将 YOUR_SERVER_IP 替换为您服务器的实际公网IP
+# 2. 将 YOUR_MAINNET_PRIVATE_KEY_HERE 替换为您的主网私钥
+# 3. 将 YOUR_OFFICE_IP 和 YOUR_HOME_IP 替换为您的实际IP
+# 4. 配置防火墙，仅允许白名单IP访问
+# 5. 启用所有安全措施
+# 6. 定期监控日志和告警
+
+# 获取您的公网IP
+# curl ifconfig.me
+# curl ipinfo.io/ip
+
+# 访问地址（替换为实际IP）
+# Web前端: http://123.45.67.89:3000
+# Web后端: http://123.45.67.89:8000
+# API文档: http://123.45.67.89:8000/docs

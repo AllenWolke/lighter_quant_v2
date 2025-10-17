@@ -94,7 +94,7 @@ const ActivePositions: React.FC<ActivePositionsProps> = ({ className }) => {
       key: 'quantity',
       width: 60,
       render: (quantity: number) => (
-        <Text style={{ fontSize: '11px' }}>{quantity.toFixed(2)}</Text>
+        <Text style={{ fontSize: '11px' }}>{quantity ? quantity.toFixed(2) : '0.00'}</Text>
       ),
     },
     {
@@ -103,7 +103,7 @@ const ActivePositions: React.FC<ActivePositionsProps> = ({ className }) => {
       key: 'currentPrice',
       width: 60,
       render: (price: number) => (
-        <Text style={{ fontSize: '11px' }}>${price.toFixed(0)}</Text>
+        <Text style={{ fontSize: '11px' }}>${price ? price.toFixed(0) : '0'}</Text>
       ),
     },
     {
@@ -112,7 +112,8 @@ const ActivePositions: React.FC<ActivePositionsProps> = ({ className }) => {
       key: 'unrealizedPnl',
       width: 60,
       render: (pnl: number) => {
-        const isPositive = pnl >= 0;
+        const safePnl = pnl || 0;
+        const isPositive = safePnl >= 0;
         return (
           <Text 
             style={{ 
@@ -121,7 +122,7 @@ const ActivePositions: React.FC<ActivePositionsProps> = ({ className }) => {
               fontWeight: '500'
             }}
           >
-            {isPositive ? '+' : ''}${pnl.toFixed(0)}
+            {isPositive ? '+' : ''}${safePnl.toFixed(0)}
           </Text>
         );
       },
@@ -132,7 +133,7 @@ const ActivePositions: React.FC<ActivePositionsProps> = ({ className }) => {
       key: 'leverage',
       width: 40,
       render: (leverage: number) => (
-        <Text style={{ fontSize: '11px' }}>{leverage}x</Text>
+        <Text style={{ fontSize: '11px' }}>{leverage || 1}x</Text>
       ),
     },
   ];

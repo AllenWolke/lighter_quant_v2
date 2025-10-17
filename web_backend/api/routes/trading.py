@@ -19,7 +19,7 @@ from services.trading_service import TradingService
 router = APIRouter()
 
 
-@router.get("/account", response_model=AccountInfo)
+@router.get("/account", response_model=AccountInfo, response_model_by_alias=True)
 async def get_account_info(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -33,6 +33,41 @@ async def get_account_info(
         raise HTTPException(status_code=500, detail=f"获取账户信息失败: {str(e)}")
 
 
+@router.get("/symbols")
+async def get_symbols(
+    current_user: User = Depends(get_current_active_user)
+):
+    """获取交易对列表"""
+    try:
+        # 返回支持的交易对列表
+        symbols = [
+            "BTC/USDT",
+            "ETH/USDT",
+            "BNB/USDT",
+            "SOL/USDT",
+            "ARB/USDT",
+            "OP/USDT",
+            "MATIC/USDT"
+        ]
+        return symbols
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取交易对列表失败: {str(e)}")
+
+
+@router.get("/positions")
+async def get_positions(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """获取持仓列表"""
+    try:
+        trading_service = TradingService()
+        positions = await trading_service.get_positions()
+        return positions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取持仓列表失败: {str(e)}")
+
+
 @router.get("/stats", response_model=TradingStats)
 async def get_trading_stats(
     current_user: User = Depends(get_current_active_user),
@@ -42,7 +77,7 @@ async def get_trading_stats(
     """获取交易统计"""
     try:
         trading_service = TradingService()
-        stats = await trading_service.get_trading_stats(current_user.id, days)
+        stats = await trading_service.get_trading_stats(days)  # 修复：移除 user_id 参数
         return stats
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取交易统计失败: {str(e)}")

@@ -2,7 +2,7 @@
 交易相关的数据模式
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -113,12 +113,27 @@ class TradingStats(BaseModel):
 class AccountInfo(BaseModel):
     """账户信息"""
     balance: float
-    available_balance: float
-    margin_balance: float
-    unrealized_pnl: float
-    total_pnl: float
-    margin_ratio: float
-    risk_level: str
+    available_balance: float = Field(..., serialization_alias="availableBalance")
+    margin_balance: float = Field(..., serialization_alias="marginBalance")
+    unrealized_pnl: float = Field(..., serialization_alias="unrealizedPnl")
+    total_pnl: float = Field(..., serialization_alias="totalPnl")
+    margin_ratio: float = Field(..., serialization_alias="marginRatio")
+    risk_level: str = Field(..., serialization_alias="riskLevel")
+    
+    model_config = ConfigDict(
+        populate_by_name=True,  # 允许使用字段名或别名
+        json_schema_extra={
+            "example": {
+                "balance": 10000.0,
+                "availableBalance": 9500.0,
+                "marginBalance": 10000.0,
+                "unrealizedPnl": 0.0,
+                "totalPnl": 500.0,
+                "marginRatio": 0.05,
+                "riskLevel": "low"
+            }
+        }
+    )
 
 
 class MarketData(BaseModel):

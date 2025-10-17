@@ -3,9 +3,20 @@
 import { format, parseISO, isValid } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
+// 安全的 toFixed - 防止 undefined/null 错误
+export const safeToFixed = (
+  value: number | undefined | null,
+  decimals: number = 2
+): string => {
+  if (value === undefined || value === null || isNaN(value)) {
+    return '0.' + '0'.repeat(decimals);
+  }
+  return value.toFixed(decimals);
+};
+
 // 数字格式化
 export const formatNumber = (
-  value: number | string,
+  value: number | string | undefined | null,
   options: {
     precision?: number;
     prefix?: string;
@@ -20,6 +31,8 @@ export const formatNumber = (
     thousandSeparator = true,
   } = options;
 
+  if (value === undefined || value === null) return '0';
+  
   const num = typeof value === 'string' ? parseFloat(value) : value;
   
   if (isNaN(num)) return '0';

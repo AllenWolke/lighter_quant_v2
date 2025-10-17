@@ -8,11 +8,13 @@ from .mean_reversion import MeanReversionStrategy
 from .momentum import MomentumStrategy
 from .arbitrage import ArbitrageStrategy
 from .ut_bot import UTBotStrategy
+from .multi_market_strategy import MultiMarketStrategyWrapper
 
 __all__ = [
     "BaseStrategy",
     "MeanReversionStrategy", 
     "MomentumStrategy",
     "ArbitrageStrategy",
-    "UTBotStrategy"
+    "UTBotStrategy",
+    "MultiMarketStrategyWrapper"
 ]
