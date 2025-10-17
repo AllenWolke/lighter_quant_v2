@@ -65,6 +65,16 @@ class PositionManager:
         # 仓位历史
         self.position_history: List[Position] = []
         
+        # API客户端引用（稍后设置）
+        self.api_client = None
+        self.signer_client = None
+    
+    def set_api_clients(self, api_client, signer_client):
+        """设置API客户端引用"""
+        self.api_client = api_client
+        self.signer_client = signer_client
+        self.logger.info("API客户端已设置")
+        
     async def initialize(self):
         """初始化仓位管理器"""
         self.logger.info("初始化仓位管理器...")
@@ -77,19 +87,87 @@ class PositionManager:
     async def _load_existing_positions(self):
         """加载现有仓位"""
         try:
-            # ⭐ 修复：从交易所API获取现有仓位
             self.logger.info("正在从交易所加载现有仓位...")
             
-            # 注意：这里需要访问API客户端，但PositionManager没有直接的API客户端引用
-            # 我们需要通过其他方式获取现有仓位信息
-            # 暂时先清空本地仓位缓存，让系统重新检测
-            self.positions.clear()
-            self.logger.info("已清空本地仓位缓存，系统将重新检测现有仓位")
+            if not self.api_client or not self.signer_client:
+                self.logger.warning("API客户端未设置，无法获取真实持仓信息")
+                self.positions.clear()
+                return
             
-            # TODO: 实现真正的API调用获取现有仓位
-            # 这需要访问lighter API的账户信息接口
-            # 例如：account_api.account() 获取账户详情，包括持仓信息
+            # 从Lighter API获取账户信息
+            from lighter.api.account_api import AccountApi
+            account_api = AccountApi(self.api_client)
             
+            # 获取账户详情
+            account_info = await account_api.account(by="index", value="0")
+            
+            if account_info and hasattr(account_info, 'accounts'):
+                loaded_positions = 0
+                
+                for account in account_info.accounts:
+                    # 检查是否有持仓信息
+                    if hasattr(account, 'positions') and account.positions:
+                        for position_data in account.positions:
+                            try:
+                                # 解析持仓数据
+                                market_id = getattr(position_data, 'market_id', None)
+                                if market_id is None:
+                                    continue
+                                    
+                                side_str = getattr(position_data, 'side', '')
+                                if side_str == 'long':
+                                    side = PositionSide.LONG
+                                elif side_str == 'short':
+                                    side = PositionSide.SHORT
+                                else:
+                                    continue
+                                
+                                size = float(getattr(position_data, 'size', 0))
+                                if size <= 0:
+                                    continue
+                                
+                                entry_price = float(getattr(position_data, 'entry_price', 0))
+                                current_price = float(getattr(position_data, 'current_price', entry_price))
+                                leverage = float(getattr(position_data, 'leverage', 1.0))
+                                margin = float(getattr(position_data, 'margin', 0))
+                                
+                                # 计算盈亏
+                                if side == PositionSide.LONG:
+                                    unrealized_pnl = (current_price - entry_price) * size
+                                else:
+                                    unrealized_pnl = (entry_price - current_price) * size
+                                
+                                # 创建Position对象
+                                position = Position(
+                                    market_id=market_id,
+                                    side=side,
+                                    size=size,
+                                    entry_price=entry_price,
+                                    current_price=current_price,
+                                    unrealized_pnl=unrealized_pnl,
+                                    realized_pnl=0.0,
+                                    leverage=leverage,
+                                    margin=margin,
+                                    timestamp=datetime.now()
+                                )
+                                
+                                self.positions[market_id] = position
+                                loaded_positions += 1
+                                
+                                self.logger.info(f"✅ 加载持仓: 市场{market_id}, {side.value}, 数量{size:.6f}, 价格${entry_price:.6f}")
+                                
+                            except Exception as e:
+                                self.logger.error(f"解析持仓数据失败: {e}")
+                                continue
+                
+                if loaded_positions > 0:
+                    self.logger.info(f"成功加载 {loaded_positions} 个持仓")
+                else:
+                    self.logger.info("未发现任何持仓")
+            else:
+                self.logger.info("账户信息为空或格式不正确")
+                self.positions.clear()
+                
         except Exception as e:
             self.logger.error(f"加载现有仓位失败: {e}")
             # 即使失败也清空缓存，避免使用过期的仓位信息
@@ -99,6 +177,15 @@ class PositionManager:
     async def update_positions(self):
         """更新仓位信息"""
         try:
+            # 定期从交易所同步持仓信息（每100次调用同步一次）
+            if not hasattr(self, '_update_counter'):
+                self._update_counter = 0
+            
+            self._update_counter += 1
+            if self._update_counter % 100 == 0:  # 每100次更新时同步一次
+                self.logger.info("执行定期持仓同步...")
+                await self._load_existing_positions()
+            
             # 更新所有仓位的当前价格和未实现盈亏
             for market_id, position in self.positions.items():
                 await self._update_position_price(position)

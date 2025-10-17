@@ -121,13 +121,13 @@ async def main():
                 enable_multi_timeframe=enable_multi_timeframe
             )
             
-            # 初始化多市场包装器
-            await multi_market_wrapper.initialize()
-            await multi_market_wrapper.start()
-            
-            # 添加所有策略实例到引擎
+            # 添加所有策略实例到引擎（但不立即初始化）
             for strategy in multi_market_wrapper.get_all_strategies():
                 engine.add_strategy(strategy)
+            
+            # 初始化多市场包装器（在引擎设置后）
+            await multi_market_wrapper.initialize()
+            await multi_market_wrapper.start()
             
             print()
             print("✅ 多市场策略已初始化")

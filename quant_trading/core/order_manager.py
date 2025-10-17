@@ -82,7 +82,7 @@ class Order:
 class OrderManager:
     """订单管理器"""
     
-    def __init__(self, signer_client: lighter.SignerClient, config: Config, notification_manager: Optional[NotificationManager] = None, data_manager=None):
+    def __init__(self, signer_client: lighter.SignerClient, config: Config, notification_manager: Optional[NotificationManager] = None, data_manager=None, position_manager=None):
         """
         初始化订单管理器
         
@@ -91,12 +91,14 @@ class OrderManager:
             config: 配置对象
             notification_manager: 通知管理器
             data_manager: 数据管理器（用于获取当前价格进行滑点检查和市场规则）
+            position_manager: 持仓管理器（用于订单后持仓同步）
         """
         self.signer_client = signer_client
         self.config = config
         self.logger = setup_logger("OrderManager", config.log_level)
         self.notification_manager = notification_manager
         self.data_manager = data_manager
+        self.position_manager = position_manager
         
         # 价格滑点容忍度（默认0.05%）
         self.price_slippage_tolerance = 0.0005  # 0.05%
@@ -590,6 +592,9 @@ class OrderManager:
                             log_msg += f", tx_hash: {tx_hash}"
                         self.logger.info(log_msg)
                         order.status = OrderStatus.SUBMITTED
+                        
+                        # ⭐ 修复：订单提交成功后立即同步持仓
+                        await self._sync_position_after_order(order)
                 else:
                     self.logger.error(f"创建市价订单失败: 返回值异常，tx和err都为None")
                     order.status = OrderStatus.REJECTED
@@ -797,3 +802,27 @@ class OrderManager:
             "cancelled_orders": cancelled_orders,
             "active_orders": len(self.get_active_orders())
         }
+    
+    async def _sync_position_after_order(self, order: Order):
+        """订单提交成功后立即同步持仓"""
+        try:
+            if self.position_manager:
+                self.logger.info(f"🔄 订单提交成功，立即同步持仓状态...")
+                await self.position_manager._load_existing_positions()
+                
+                # 检查是否成功同步到持仓
+                position = self.position_manager.get_position(order.market_id)
+                if position:
+                    self.logger.info(f"✅ 持仓同步成功: 市场{order.market_id}, {position.side.value}, 数量{position.size:.6f}")
+                else:
+                    self.logger.warning(f"⚠️  订单提交成功但未检测到持仓: 市场{order.market_id}")
+                    self.logger.warning("可能原因:")
+                    self.logger.warning("  1. 订单尚未完全成交")
+                    self.logger.warning("  2. API返回的持仓格式与预期不符")
+                    self.logger.warning("  3. 持仓同步延迟")
+            else:
+                self.logger.warning("持仓管理器未设置，无法同步持仓状态")
+                
+        except Exception as e:
+            self.logger.error(f"持仓同步失败: {e}")
+            # 不抛出异常，避免影响订单流程

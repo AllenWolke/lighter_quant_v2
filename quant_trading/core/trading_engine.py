@@ -52,8 +52,12 @@ class TradingEngine:
         self.data_manager = DataManager(self.api_client, config)
         self.risk_manager = RiskManager(config)
         self.position_manager = PositionManager(config)
-        # OrderManager需要data_manager来进行价格滑点检查
-        self.order_manager = OrderManager(self.signer_client, config, self.notification_manager, self.data_manager)
+        
+        # 设置PositionManager的API客户端引用
+        self.position_manager.set_api_clients(self.api_client, self.signer_client)
+        
+        # OrderManager需要data_manager来进行价格滑点检查，需要position_manager进行持仓同步
+        self.order_manager = OrderManager(self.signer_client, config, self.notification_manager, self.data_manager, self.position_manager)
         
         # 策略列表
         self.strategies: List[BaseStrategy] = []

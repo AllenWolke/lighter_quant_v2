@@ -320,8 +320,8 @@ strategies:
     market_id: 3  # 使用市场3 (DOGE)
     # 支持多市场交易（需求②）
     market_ids: [3, 2, 0]  # DOGE, SOL, ETH - 可同时交易多个市场 ⭐
-    key_value: 1.0
-    atr_period: 10
+    key_value: 0.5
+    atr_period: 5
     use_heikin_ashi: false
     position_size: 2.0  # $2.0 USD (DOGE价格$0.21时 = 约9.5 DOGE)
     stop_loss: 0.02
