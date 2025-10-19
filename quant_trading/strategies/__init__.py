@@ -7,7 +7,7 @@ from .base_strategy import BaseStrategy
 from .mean_reversion import MeanReversionStrategy
 from .momentum import MomentumStrategy
 from .arbitrage import ArbitrageStrategy
-from .ut_bot import UTBotStrategy
+from .ut_bot_strategy import UTBotStrategy
 from .multi_market_strategy import MultiMarketStrategyWrapper
 
 __all__ = [

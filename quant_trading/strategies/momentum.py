@@ -50,8 +50,13 @@ class MomentumStrategy(BaseStrategy):
         self.take_profit = take_profit if take_profit is not None else mom_config.get('take_profit', 0.05)
         self.price_slippage_tolerance = mom_config.get('price_slippage_tolerance', 0.01)  # 价格滑点容忍度，默认1%
         
-        # ⭐ 新需求：市场级止盈止损配置
-        self.market_risk_config = getattr(config, 'data_sources', {}).get('market_risk_config', {})
+        # ⭐ 市场级止盈止损配置（仅使用策略级别的配置）
+        self.market_risk_config = mom_config.get('market_risk_config', {})
+        if self.market_risk_config:
+            self.logger.info(f"使用config.yaml中的风险配置: {len(self.market_risk_config)} 个市场")
+        else:
+            self.logger.info("使用默认风险配置")
+        
         market_risk = self.market_risk_config.get(self.market_id, {})
         self.market_stop_loss_enabled = market_risk.get('stop_loss_enabled', True)
         self.market_stop_loss = market_risk.get('stop_loss', self.stop_loss)
@@ -60,8 +65,33 @@ class MomentumStrategy(BaseStrategy):
         
         self.logger.info(f"市场 {self.market_id} 风险配置: 止损={'开启' if self.market_stop_loss_enabled else '关闭'}({self.market_stop_loss*100:.1f}%), 止盈={'开启' if self.market_take_profit_enabled else '关闭'}({self.market_take_profit*100:.1f}%)")
         
+        # ⭐ 市场级滑点配置（优先使用config.yaml中的配置）
+        config_slippage = mom_config.get('market_slippage_config', {})
+        if config_slippage:
+            # 使用config.yaml中的配置
+            self.market_slippage_config = config_slippage
+            self.logger.info(f"使用config.yaml中的滑点配置: {len(config_slippage)} 个市场")
+        else:
+            # 使用默认配置
+            self.market_slippage_config = {
+                0: {"enabled": True, "tolerance": 0.01},    # ETH: 1%滑点容忍度
+                1: {"enabled": True, "tolerance": 0.005},   # BTC: 0.5%滑点容忍度
+                2: {"enabled": False, "tolerance": 0.02},   # SOL: 关闭滑点检测，直接市价成交
+                3: {"enabled": True, "tolerance": 0.03},    # DOGE: 3%滑点容忍度，波动较大
+            }
+            self.logger.info("使用默认滑点配置")
+        
+        # 获取当前市场的滑点配置
+        current_slippage = self.market_slippage_config.get(self.market_id, {"enabled": True, "tolerance": 0.01})
+        self.slippage_enabled = current_slippage["enabled"]
+        self.slippage_tolerance = current_slippage["tolerance"]
+        
+        # ⭐ 需求①：K线类型配置
+        self.kline_types = mom_config.get('kline_types', [1])  # 默认只对1分钟K线发出信号
+        self.logger.info(f"K线类型配置: {self.kline_types}分钟 - 策略将对这些时间周期的K线发出交易信号")
+        
         self.logger.info(f"策略配置: position_size=${self.position_size_usd} USD (将根据市场价格自动计算加密货币数量)")
-        self.logger.info(f"滑点容忍度: {self.price_slippage_tolerance*100:.2f}% (可在config.yaml中调整)")
+        self.logger.info(f"市场 {self.market_id} 滑点配置: {'开启' if self.slippage_enabled else '关闭'}, 容忍度={self.slippage_tolerance*100:.2f}%")
     
     async def _check_market_level_risk_management(self, current_price: float):
         """⭐ 新需求：检查市场级止盈止损条件"""
@@ -226,7 +256,8 @@ class MomentumStrategy(BaseStrategy):
             order_type="market",
             size=actual_size,  # 使用计算后的实际数量
             price=price,
-            price_slippage_tolerance=self.price_slippage_tolerance  # 使用策略配置的滑点容忍度
+            price_slippage_tolerance=self.slippage_tolerance,  # 使用市场特定的滑点容忍度
+            slippage_enabled=self.slippage_enabled  # 使用市场特定的滑点开关
         )
         
         if order:
@@ -261,7 +292,8 @@ class MomentumStrategy(BaseStrategy):
             order_type="market",
             size=actual_size,  # 使用计算后的实际数量
             price=price,
-            price_slippage_tolerance=self.price_slippage_tolerance  # 使用策略配置的滑点容忍度
+            price_slippage_tolerance=self.slippage_tolerance,  # 使用市场特定的滑点容忍度
+            slippage_enabled=self.slippage_enabled  # 使用市场特定的滑点开关
         )
         
         if order:
@@ -300,7 +332,9 @@ class MomentumStrategy(BaseStrategy):
                 side="sell" if position.side == PositionSide.LONG else "buy",
                 order_type="market",
                 size=position.size,
-                price=current_price
+                price=current_price,
+                price_slippage_tolerance=self.slippage_tolerance,  # 使用市场特定的滑点容忍度
+                slippage_enabled=self.slippage_enabled  # 使用市场特定的滑点开关
             )
             
             if order:

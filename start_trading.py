@@ -511,7 +511,7 @@ async def monitor_connection_and_positions(engine, config):
                                         continue
                         
                         # 检查是否已有仓位
-                        has_position = strategy_market_id in positions
+                        has_position = strategy_market_id in local_positions
                         if has_position:
                             print(f"    📊 已有仓位")
                             print(f"       等待平仓信号")
@@ -679,18 +679,45 @@ async def start_trading_engine(config, user_config):
             ut_config = strategies_config.get('ut_bot', {})
             # 优先使用config中的market_id，如果config没有才使用用户输入
             strategy_market_id = ut_config.get('market_id') if 'market_id' in ut_config else user_input_market_id
-            ut_bot = UTBotStrategy(
-                config=config,
-                market_id=strategy_market_id,
-                key_value=ut_config.get('key_value', 1.0),
+            
+            # 创建UTBotConfig对象
+            from quant_trading.strategies.ut_bot_strategy import UTBotConfig
+            ut_bot_config = UTBotConfig(
+                key_value=ut_config.get('key_value', 3.0),
                 atr_period=ut_config.get('atr_period', 10),
                 use_heikin_ashi=ut_config.get('use_heikin_ashi', False),
-                position_size=ut_config.get('position_size', 0.1),
-                stop_loss=ut_config.get('stop_loss', 0.02),
-                take_profit=ut_config.get('take_profit', 0.01)
+                ema_length=ut_config.get('ema_length', 200),
+                risk_per_trade=ut_config.get('risk_per_trade', 2.5),
+                atr_multiplier=ut_config.get('atr_multiplier', 1.5),
+                risk_reward_breakeven=ut_config.get('risk_reward_breakeven', 0.75),
+                risk_reward_takeprofit=ut_config.get('risk_reward_takeprofit', 3.0),
+                tp_percent=ut_config.get('tp_percent', 50.0),
+                stoploss_type=ut_config.get('stoploss_type', "atr"),
+                swing_high_bars=ut_config.get('swing_high_bars', 10),
+                swing_low_bars=ut_config.get('swing_low_bars', 10),
+                enable_long=ut_config.get('enable_long', True),
+                enable_short=ut_config.get('enable_short', True),
+                use_takeprofit=ut_config.get('use_takeprofit', True),
+                use_leverage=ut_config.get('use_leverage', True),
+                trading_start_time=ut_config.get('trading_start_time', "00:00"),
+                trading_end_time=ut_config.get('trading_end_time', "23:59")
             )
+            
+            # 创建UT Bot策略实例
+            ut_bot = UTBotStrategy(
+                name="UTBot",
+                config=config,
+                ut_config=ut_bot_config
+            )
+            
+            # 设置市场ID
+            ut_bot.market_id = strategy_market_id
+            
             engine.add_strategy(ut_bot)
-            print(f"✅ 已添加UT Bot策略 (market_id={strategy_market_id}, position_size={ut_config.get('position_size', 0.1)}, key_value={ut_config.get('key_value', 1.0)})")
+            print(f"✅ 已添加UT Bot策略 (market_id={strategy_market_id}, use_real_time_ticks={ut_bot.use_real_time_ticks})")
+            print(f"   配置: key_value={ut_bot_config.key_value}, atr_period={ut_bot_config.atr_period}, ema_length={ut_bot_config.ema_length}")
+            print(f"   风险管理: risk_per_trade={ut_bot_config.risk_per_trade}%, atr_multiplier={ut_bot_config.atr_multiplier}")
+            print(f"   实时tick模式: {'已启用' if ut_bot.use_real_time_ticks else '未启用'}")
         
         print()
         print("🚀 启动交易引擎...")

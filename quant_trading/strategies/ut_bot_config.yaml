@@ -1,0 +1,64 @@
+# UT Bot策略配置文件
+
+# 策略基本信息
+strategy_name: "UT_Bot_Strategy"
+strategy_version: "1.0.0"
+description: "基于UT Bot Alerts指标的量化交易策略"
+
+# UT Bot Alerts参数
+ut_bot_config:
+  # 核心参数
+  key_value: 3.0          # 关键值，控制止损距离倍数
+  atr_period: 1           # ATR计算周期
+  use_heikin_ashi: false  # 是否使用Heikin Ashi蜡烛图
+  
+  # 趋势过滤
+  ema_length: 200         # EMA长度，用于趋势过滤
+  
+  # 风险管理
+  risk_per_trade: 2.5     # 每笔交易风险百分比
+  atr_multiplier: 1.5     # ATR止损倍数
+  risk_reward_breakeven: 0.75  # 保本盈亏比
+  risk_reward_takeprofit: 3.0  # 止盈盈亏比
+  tp_percent: 50.0        # 第一批止盈百分比
+  
+  # 止损类型
+  stoploss_type: "atr"    # "atr" 或 "swing"
+  swing_high_bars: 10     # 摆动高点周期
+  swing_low_bars: 10      # 摆动低点周期
+  
+  # 仓位管理
+  enable_long: true       # 允许做多
+  enable_short: true      # 允许做空
+  use_takeprofit: true    # 使用止盈
+  use_leverage: true      # 使用杠杆
+  
+  # 时间过滤
+  trading_start_time: "00:00"  # 交易开始时间
+  trading_end_time: "23:59"    # 交易结束时间
+
+# 市场配置
+markets:
+  - market_id: 1
+    symbol: "BTCUSDT"
+    enabled: true
+    max_position_size: 0.1  # 最大仓位比例
+  - market_id: 2
+    symbol: "ETHUSDT"
+    enabled: true
+    max_position_size: 0.1
+
+# 风险控制
+risk_management:
+  max_daily_loss: 0.05     # 最大日亏损比例
+  max_drawdown: 0.15       # 最大回撤比例
+  max_leverage: 2.0        # 最大杠杆
+  max_orders_per_minute: 10 # 每分钟最大订单数
+  max_open_orders: 5       # 最大开仓订单数
+
+# 日志配置
+logging:
+  level: "INFO"
+  log_signals: true
+  log_trades: true
+  log_errors: true

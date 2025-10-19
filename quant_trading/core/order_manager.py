@@ -62,6 +62,8 @@ class Order:
     client_order_index: int
     leverage: float = 1.0  # 杠杆倍数，默认1倍（不使用杠杆）
     margin_mode: MarginMode = MarginMode.CROSS  # 保证金模式，默认全仓
+    price_slippage_tolerance: float = 0.01  # 价格滑点容忍度，默认1%
+    slippage_enabled: bool = True  # 是否开启滑点检测，默认开启
     
     @property
     def remaining_size(self) -> float:
@@ -103,13 +105,7 @@ class OrderManager:
         # 价格滑点容忍度（默认0.05%）
         self.price_slippage_tolerance = 0.0005  # 0.05%
         
-        # ⭐ 需求①②：多市场滑点配置
-        self.market_slippage_config = getattr(config, 'data_sources', {}).get('market_slippage_config', {})
-        self.logger.info(f"加载市场滑点配置: {len(self.market_slippage_config)} 个市场")
-        for market_id, config_data in self.market_slippage_config.items():
-            enabled = config_data.get('enabled', True)
-            tolerance = config_data.get('tolerance', 0.01)
-            self.logger.info(f"  市场 {market_id}: 滑点检测={'开启' if enabled else '关闭'}, 容忍度={tolerance*100:.2f}%")
+        # 滑点配置现在由策略直接传入，不再使用全局配置
         
         # 市场规则缓存
         self.market_rules_cache: Dict[int, Dict[str, Any]] = {}
@@ -321,7 +317,29 @@ class OrderManager:
             size_unit = self.market_size_unit.get(order.market_id, 0.0001)
             
             base_amount_units = int(order.size / size_unit)  # 转换为Lighter的单位
-            price_cents = int(order.price * 100)  # 转换为美分
+            
+            # 获取滑点配置
+            slippage_tolerance = getattr(order, 'price_slippage_tolerance', self.price_slippage_tolerance)
+            slippage_enabled = getattr(order, 'slippage_enabled', True)
+            
+            # 根据滑点设置调整价格范围
+            if slippage_enabled:
+                # 开启滑点检测：设置最差可接受价格
+                if is_ask:  # 卖出订单：价格不能低于 order.price * (1 - slippage_tolerance)
+                    worst_acceptable_price = order.price * (1 - slippage_tolerance)
+                else:  # 买入订单：价格不能高于 order.price * (1 + slippage_tolerance)
+                    worst_acceptable_price = order.price * (1 + slippage_tolerance)
+                
+                price_cents = int(worst_acceptable_price * 100)  # 转换为美分
+                self.logger.info(f"滑点保护: 最差可接受价格 ${worst_acceptable_price:.6f} (容忍度: {slippage_tolerance*100:.1f}%)")
+            else:
+                # 关闭滑点检测：使用宽松价格范围确保成交
+                if is_ask:  # 卖出订单：使用很低的价格确保能卖出
+                    price_cents = int(order.price * 0.5 * 100)  # 50%的价格
+                else:  # 买入订单：使用很高的价格确保能买入
+                    price_cents = int(order.price * 2.0 * 100)  # 200%的价格
+                
+                self.logger.info(f"滑点检测已关闭: 使用宽松价格范围确保成交")
             
             self.logger.info(f"单位转换: 市场{order.market_id}使用size_unit={size_unit}, {order.size} → {base_amount_units} units")
             
@@ -447,13 +465,10 @@ class OrderManager:
                 self.logger.warning(f"⚠️  市场 {order.market_id} 规则未加载，跳过市场规则检查")
                 self.logger.warning(f"  建议: 确保data_manager已初始化并加载了市场数据")
             
-            # ⭐ 需求①②：获取市场特定的滑点配置
-            market_slippage_config = self.market_slippage_config.get(order.market_id, {})
-            slippage_enabled = market_slippage_config.get('enabled', True)
-            market_slippage_tolerance = market_slippage_config.get('tolerance', self.price_slippage_tolerance)
-            
-            # 使用订单的滑点容忍度，如果没有则使用市场配置，最后使用默认值
-            slippage_tolerance = getattr(order, 'price_slippage_tolerance', market_slippage_tolerance)
+            # 使用订单传入的滑点配置
+            slippage_tolerance = getattr(order, 'price_slippage_tolerance', self.price_slippage_tolerance)
+            # 默认开启滑点检测，除非策略明确指定关闭
+            slippage_enabled = getattr(order, 'slippage_enabled', True)
             
             # 检查是否开启滑点检测
             if not slippage_enabled:
@@ -517,12 +532,12 @@ class OrderManager:
             # create_market_order 可能会抛出异常（Lighter SDK内部错误）
             try:
                 result = await self.signer_client.create_market_order(
-                    market_index=order.market_id,
-                    client_order_index=order.client_order_index,
+                market_index=order.market_id,
+                client_order_index=order.client_order_index,
                     base_amount=base_amount_units,  # 使用Lighter单位（0.0001为基础）
                     avg_execution_price=price_cents,  # 使用美分
-                    is_ask=is_ask
-                )
+                is_ask=is_ask
+            )
                 self.logger.debug(f"create_market_order 调用完成，返回值类型: {type(result)}")
             except AttributeError as ae:
                 # Lighter SDK内部错误：'NoneType' object has no attribute 'code'
@@ -604,6 +619,12 @@ class OrderManager:
                 self.logger.error(f"返回值类型: {type(result)}, 值: {result}")
                 order.status = OrderStatus.REJECTED
                 
+            except Exception as e:
+                self.logger.error(f"提交市价订单失败: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
+                order.status = OrderStatus.REJECTED
+                
         except Exception as e:
             self.logger.error(f"提交市价订单失败: {e}")
             import traceback
@@ -641,14 +662,15 @@ class OrderManager:
             # 需要访问 OrderApi.orders() 或类似方法
             
             self.logger.debug(f"订单 {order.order_id} 保持SUBMITTED状态，等待手动确认或API状态更新")
-            
+                
         except Exception as e:
             self.logger.error(f"检查订单状态失败: {e}")
             
     def create_order(self, market_id: int, side: OrderSide, order_type: OrderType,
                      size: float, price: float, leverage: float = 1.0,
                      margin_mode: MarginMode = MarginMode.CROSS,
-                     price_slippage_tolerance: float = None) -> Order:
+                     price_slippage_tolerance: float = None,
+                     slippage_enabled: bool = True) -> Order:
         """
         创建订单
         
@@ -660,6 +682,8 @@ class OrderManager:
             price: 订单价格
             leverage: 杠杆倍数，默认1倍（不使用杠杆）
             margin_mode: 保证金模式，默认全仓（cross）
+            price_slippage_tolerance: 价格滑点容忍度，默认使用策略配置
+            slippage_enabled: 是否开启滑点检测，默认开启
             
         Returns:
             订单对象
@@ -682,7 +706,9 @@ class OrderManager:
                 timestamp=datetime.now(),
                 client_order_index=self.client_order_index,
                 leverage=leverage,
-                margin_mode=margin_mode
+                margin_mode=margin_mode,
+                price_slippage_tolerance=price_slippage_tolerance or self.price_slippage_tolerance,
+                slippage_enabled=slippage_enabled
             )
             
             # 添加到订单字典
@@ -804,22 +830,42 @@ class OrderManager:
         }
     
     async def _sync_position_after_order(self, order: Order):
-        """订单提交成功后立即同步持仓"""
+        """订单提交成功后同步持仓（带延迟和重试机制）"""
         try:
             if self.position_manager:
-                self.logger.info(f"🔄 订单提交成功，立即同步持仓状态...")
-                await self.position_manager._load_existing_positions()
+                self.logger.info(f"🔄 订单提交成功，开始同步持仓状态...")
                 
-                # 检查是否成功同步到持仓
-                position = self.position_manager.get_position(order.market_id)
-                if position:
-                    self.logger.info(f"✅ 持仓同步成功: 市场{order.market_id}, {position.side.value}, 数量{position.size:.6f}")
-                else:
-                    self.logger.warning(f"⚠️  订单提交成功但未检测到持仓: 市场{order.market_id}")
-                    self.logger.warning("可能原因:")
-                    self.logger.warning("  1. 订单尚未完全成交")
-                    self.logger.warning("  2. API返回的持仓格式与预期不符")
-                    self.logger.warning("  3. 持仓同步延迟")
+                # 等待3秒让交易所处理订单
+                await asyncio.sleep(3)
+                
+                # 尝试3次同步持仓
+                for attempt in range(3):
+                    try:
+                        self.logger.info(f"🔄 尝试同步持仓 (第{attempt + 1}次)...")
+                        await self.position_manager._load_existing_positions()
+                        
+                        # 检查是否成功同步到持仓
+                        position = self.position_manager.get_position(order.market_id)
+                        if position:
+                            self.logger.info(f"✅ 持仓同步成功: 市场{order.market_id}, {position.side.value}, 数量{position.size:.6f}")
+                            return  # 成功同步，退出重试循环
+                        else:
+                            if attempt < 2:  # 不是最后一次尝试
+                                self.logger.info(f"⏳ 持仓尚未出现，等待2秒后重试...")
+                                await asyncio.sleep(2)
+                            else:
+                                # 最后一次尝试失败
+                                self.logger.warning(f"⚠️  订单提交成功但未检测到持仓: 市场{order.market_id}")
+                                self.logger.warning("可能原因:")
+                                self.logger.warning("  1. 订单尚未完全成交（市价单需要时间匹配）")
+                                self.logger.warning("  2. 持仓API响应延迟")
+                                self.logger.warning("  3. 订单数量太小，未达到最小持仓显示要求")
+                                self.logger.warning("  4. 交易所内部处理延迟")
+                                self.logger.info("💡 建议: 等待几分钟后手动检查持仓，或查看交易所界面确认订单状态")
+                    except Exception as e:
+                        self.logger.error(f"持仓同步失败 (第{attempt + 1}次): {e}")
+                        if attempt < 2:
+                            await asyncio.sleep(2)
             else:
                 self.logger.warning("持仓管理器未设置，无法同步持仓状态")
                 

@@ -1,17 +1,19 @@
 """
 数据管理器
 负责获取和管理市场数据
-支持多种数据源
+支持多种数据源，包括实时WebSocket数据流
 """
 
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any
+import json
+from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime, timedelta
 import lighter
 from lighter.api.candlestick_api import CandlestickApi
 from lighter.api.order_api import OrderApi
 from lighter.api.account_api import AccountApi
+from lighter.ws_client import WsClient
 
 from ..utils.config import Config
 from ..utils.logger import setup_logger
@@ -55,6 +57,18 @@ class DataManager:
         self.last_api_call_time = datetime.now()
         self.min_api_interval = 0.1  # API调用最小间隔（秒）
         
+        # WebSocket实时数据流
+        self.ws_client: Optional[WsClient] = None
+        self.ws_running = False
+        self.ws_task: Optional[asyncio.Task] = None
+        
+        # 实时tick数据回调
+        self.tick_callbacks: List[Callable[[int, Dict[str, Any]], None]] = []
+        
+        # 实时价格数据
+        self.real_time_prices: Dict[int, float] = {}
+        self.last_tick_time: Dict[int, datetime] = {}
+        
     async def initialize(self):
         """初始化数据管理器"""
         self.logger.info("初始化数据管理器...")
@@ -64,6 +78,9 @@ class DataManager:
         
         # 获取初始市场数据
         await self._load_initial_data()
+        
+        # 初始化WebSocket实时数据流
+        await self._initialize_websocket()
         
         self.logger.info("数据管理器初始化完成")
         
@@ -267,27 +284,50 @@ class DataManager:
             self.logger.error(f"数据源 {source_name} 不存在")
             
     async def _update_market_data(self, market_id: int):
-        """更新指定市场的数据"""
+        """更新指定市场的数据 - 仅使用实时数据源"""
         try:
             current_time = datetime.now()
             
-            # 更新K线数据
-            if self._should_update_data("candlesticks", market_id):
-                await self._update_candlesticks(market_id)
-                self.last_update_time[f"candlesticks_{market_id}"] = current_time
+            # ⚠️ 注意：为了确保market_data_cache只包含实时数据，
+            # 这里不再更新K线、订单簿、交易数据
+            # 这些数据现在只通过WebSocket实时更新
+            
+            # 只初始化市场缓存结构，不填充历史数据
+            if market_id not in self.market_data_cache:
+                self.market_data_cache[market_id] = {
+                    "market_info": None,
+                    "candlesticks": [],  # 空，等待实时数据填充
+                    "order_book": None,  # 空，等待实时数据填充
+                    "trades": [],        # 空，等待实时数据填充
+                    "last_price": 0,     # 从实时数据更新
+                    "last_tick": None    # 从实时数据更新
+                }
+            
+            # 只获取市场信息（一次性，非实时数据）
+            if not self.market_data_cache[market_id].get("market_info"):
+                await self._update_market_info(market_id)
                 
-            # 更新订单簿数据
-            if self._should_update_data("order_book", market_id):
-                await self._update_order_book(market_id)
-                self.last_update_time[f"order_book_{market_id}"] = current_time
-                
-            # 更新交易数据
-            if self._should_update_data("trades", market_id):
-                await self._update_trades(market_id)
-                self.last_update_time[f"trades_{market_id}"] = current_time
+            self.logger.debug(f"市场 {market_id} 数据缓存已初始化，等待实时数据填充")
                 
         except Exception as e:
             self.logger.error(f"更新市场 {market_id} 数据失败: {e}")
+    
+    async def _update_market_info(self, market_id: int):
+        """更新市场信息（一次性获取，非实时数据）"""
+        try:
+            # 获取市场列表来找到对应的市场信息
+            markets = await self.order_api.order_books()
+            
+            for market in markets.order_books:
+                if market.market_id == market_id:
+                    self.market_data_cache[market_id]["market_info"] = market
+                    self.logger.debug(f"市场 {market_id} 信息已更新: {market.symbol}")
+                    return
+            
+            self.logger.warning(f"未找到市场 {market_id} 的信息")
+            
+        except Exception as e:
+            self.logger.error(f"更新市场 {market_id} 信息失败: {e}")
             
     def _get_symbol_for_market(self, market_id: int) -> str:
         """
@@ -637,3 +677,253 @@ class DataManager:
         if market_data and "trades" in market_data:
             return market_data["trades"][-limit:]
         return []
+    
+    async def get_historical_candlesticks(self, market_id: int, limit: int = 100) -> List[Dict[str, Any]]:
+        """
+        获取历史K线数据（不存储在market_data_cache中）
+        用于策略初始化或一次性分析
+        """
+        try:
+            self.logger.info(f"获取市场 {market_id} 的历史K线数据")
+            
+            # 使用主数据源获取K线数据
+            if self.primary_data_source != "lighter" and self.primary_data_source in self.data_sources:
+                # 使用TradingView或其他数据源
+                try:
+                    data_source = self.data_sources[self.primary_data_source]
+                    symbol = self._get_symbol_for_market(market_id)
+                    
+                    candlesticks_data = await data_source.get_candlesticks(
+                        symbol=symbol,
+                        timeframe="1m",
+                        limit=limit
+                    )
+                    
+                    if candlesticks_data:
+                        self.logger.info(f"从 {self.primary_data_source} 获取到 {len(candlesticks_data)} 条历史K线数据")
+                        return candlesticks_data
+                        
+                except Exception as e:
+                    self.logger.warning(f"从 {self.primary_data_source} 获取历史K线数据失败: {e}，回退到Lighter")
+            
+            # 回退到Lighter数据源
+            end_time = int(datetime.now().timestamp())
+            start_time = end_time - (limit * 60)  # 根据limit计算时间范围
+            
+            candlesticks = await self.candlestick_api.candlesticks(
+                market_id=market_id,
+                resolution="1m",
+                start_timestamp=start_time,
+                end_timestamp=end_time,
+                count_back=limit
+            )
+            
+            if candlesticks and candlesticks.candlesticks:
+                candlesticks_list = [
+                    {
+                        "timestamp": c.timestamp,
+                        "open": float(c.open),
+                        "high": float(c.high),
+                        "low": float(c.low),
+                        "close": float(c.close),
+                        "volume": float(c.volume0)
+                    } for c in candlesticks.candlesticks
+                ]
+                self.logger.info(f"从Lighter获取到 {len(candlesticks_list)} 条历史K线数据")
+                return candlesticks_list
+                
+        except Exception as e:
+            self.logger.error(f"获取历史K线数据失败 (市场 {market_id}): {e}")
+            return []
+    
+    async def _initialize_websocket(self):
+        """初始化WebSocket实时数据流"""
+        try:
+            # 获取需要订阅的市场ID
+            market_ids = self._get_required_market_ids()
+            
+            if not market_ids:
+                self.logger.warning("没有需要订阅的市场，跳过WebSocket初始化")
+                return
+            
+            self.logger.info(f"初始化WebSocket实时数据流，订阅市场: {market_ids}")
+            
+            # 创建WebSocket客户端
+            self.ws_client = WsClient(
+                order_book_ids=market_ids,
+                account_ids=[str(self.config.lighter_config.get("account_index", 0))],
+                on_order_book_update=self._on_order_book_update,
+                on_account_update=self._on_account_update
+            )
+            
+            # 启动WebSocket任务
+            self.ws_running = True
+            self.ws_task = asyncio.create_task(self._run_websocket())
+            
+            self.logger.info("WebSocket实时数据流初始化完成")
+            
+        except Exception as e:
+            self.logger.error(f"WebSocket初始化失败: {e}")
+            self.ws_running = False
+    
+    def _get_required_market_ids(self) -> List[int]:
+        """获取需要订阅的市场ID列表"""
+        market_ids = set()
+        
+        # 从策略配置中获取
+        if hasattr(self.config, 'strategies') and self.config.strategies:
+            for strategy_name, strategy_config in self.config.strategies.items():
+                if strategy_config.get("enabled", False):
+                    if "market_id" in strategy_config:
+                        market_ids.add(strategy_config["market_id"])
+                    if "market_id_1" in strategy_config:
+                        market_ids.add(strategy_config["market_id_1"])
+                    if "market_id_2" in strategy_config:
+                        market_ids.add(strategy_config["market_id_2"])
+        
+        # 从配置的额外市场列表获取
+        if hasattr(self.config, 'data_sources') and self.config.data_sources:
+            extra_markets = self.config.data_sources.get("extra_markets", [])
+            market_ids.update(extra_markets)
+        
+        # 如果没有配置的市场，使用默认市场
+        if not market_ids:
+            market_ids = {0, 1, 2}  # ETH, BTC, SOL
+        
+        return list(market_ids)
+    
+    async def _run_websocket(self):
+        """运行WebSocket连接"""
+        try:
+            while self.ws_running:
+                try:
+                    # 运行WebSocket客户端
+                    self.ws_client.run()
+                except Exception as e:
+                    self.logger.error(f"WebSocket连接错误: {e}")
+                    if self.ws_running:
+                        self.logger.info("5秒后重连WebSocket...")
+                        await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            self.logger.info("WebSocket任务被取消")
+        except Exception as e:
+            self.logger.error(f"WebSocket运行错误: {e}")
+        finally:
+            self.ws_running = False
+    
+    def _on_order_book_update(self, market_id: int, order_book: Dict[str, Any]):
+        """
+        订单簿更新回调 - 实时tick数据处理
+        ⭐ 这是market_data_cache的唯一实时数据来源
+        """
+        try:
+            # 提取实时价格数据
+            if "bids" in order_book and "asks" in order_book:
+                bids = order_book["bids"]
+                asks = order_book["asks"]
+                
+                if bids and asks:
+                    best_bid = float(bids[0]["price"]) if bids else 0
+                    best_ask = float(asks[0]["price"]) if asks else 0
+                    
+                    if best_bid > 0 and best_ask > 0:
+                        # 计算中间价
+                        mid_price = (best_bid + best_ask) / 2
+                        
+                        # 更新实时价格
+                        self.real_time_prices[market_id] = mid_price
+                        self.last_tick_time[market_id] = datetime.now()
+                        
+                        # 构建tick数据
+                        tick_data = {
+                            "timestamp": datetime.now().timestamp(),
+                            "price": mid_price,
+                            "bid": best_bid,
+                            "ask": best_ask,
+                            "bid_size": float(bids[0]["size"]) if bids else 0,
+                            "ask_size": float(asks[0]["size"]) if asks else 0,
+                            "spread": best_ask - best_bid,
+                            "data_type": "order_book"
+                        }
+                        
+                        # ⭐ 更新market_data_cache - 唯一的实时数据来源
+                        if market_id not in self.market_data_cache:
+                            self.market_data_cache[market_id] = {
+                                "market_info": None,
+                                "candlesticks": [],
+                                "order_book": None,
+                                "trades": [],
+                                "last_price": 0,
+                                "last_tick": None
+                            }
+                        
+                        # 只更新实时数据字段
+                        self.market_data_cache[market_id]["last_price"] = mid_price
+                        self.market_data_cache[market_id]["order_book"] = order_book
+                        self.market_data_cache[market_id]["last_tick"] = tick_data
+                        
+                        # 触发tick回调 - 类似Pine Script的calc_on_every_tick
+                        self._trigger_tick_callbacks(market_id, tick_data)
+                        
+                        self.logger.debug(f"实时数据更新: 市场 {market_id}, 价格 {mid_price}")
+                        
+        except Exception as e:
+            self.logger.error(f"处理订单簿更新失败 (市场 {market_id}): {e}")
+    
+    def _on_account_update(self, account_id: str, account_data: Dict[str, Any]):
+        """账户更新回调"""
+        try:
+            self.logger.debug(f"账户 {account_id} 更新: {account_data}")
+            # 这里可以处理账户余额、持仓等更新
+        except Exception as e:
+            self.logger.error(f"处理账户更新失败: {e}")
+    
+    def _trigger_tick_callbacks(self, market_id: int, tick_data: Dict[str, Any]):
+        """触发tick数据回调"""
+        for callback in self.tick_callbacks:
+            try:
+                callback(market_id, tick_data)
+            except Exception as e:
+                self.logger.error(f"Tick回调执行失败: {e}")
+    
+    def add_tick_callback(self, callback: Callable[[int, Dict[str, Any]], None]):
+        """添加tick数据回调"""
+        self.tick_callbacks.append(callback)
+        self.logger.info(f"添加tick回调，当前回调数量: {len(self.tick_callbacks)}")
+    
+    def remove_tick_callback(self, callback: Callable[[int, Dict[str, Any]], None]):
+        """移除tick数据回调"""
+        if callback in self.tick_callbacks:
+            self.tick_callbacks.remove(callback)
+            self.logger.info(f"移除tick回调，当前回调数量: {len(self.tick_callbacks)}")
+    
+    def get_real_time_price(self, market_id: int) -> Optional[float]:
+        """获取实时价格"""
+        return self.real_time_prices.get(market_id)
+    
+    def get_last_tick_time(self, market_id: int) -> Optional[datetime]:
+        """获取最后tick时间"""
+        return self.last_tick_time.get(market_id)
+    
+    async def stop_websocket(self):
+        """停止WebSocket连接"""
+        self.logger.info("停止WebSocket实时数据流...")
+        self.ws_running = False
+        
+        if self.ws_task and not self.ws_task.done():
+            self.ws_task.cancel()
+            try:
+                await self.ws_task
+            except asyncio.CancelledError:
+                pass
+        
+        if self.ws_client:
+            self.ws_client = None
+        
+        self.logger.info("WebSocket实时数据流已停止")
+    
+    async def close(self):
+        """关闭数据管理器"""
+        await self.stop_websocket()
+        if self.api_client:
+            await self.api_client.close()

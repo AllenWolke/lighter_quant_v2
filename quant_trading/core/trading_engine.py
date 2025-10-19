@@ -111,6 +111,12 @@ class TradingEngine:
         # 停止所有策略
         for strategy in self.strategies:
             await strategy.stop()
+        
+        # 停止数据管理器的WebSocket连接
+        await self.data_manager.stop_websocket()
+        
+        # 关闭数据管理器
+        await self.data_manager.close()
             
         # 关闭客户端连接
         await self.api_client.close()
@@ -169,12 +175,15 @@ class TradingEngine:
         self.logger.info("模块初始化完成")
         
     async def _main_loop(self):
-        """主循环"""
+        """主循环 - 支持实时tick数据流"""
         self.logger.info("进入主循环...")
         
         # 连接健康检查计数器
         loop_count = 0
         connection_check_interval = 100  # 每100次循环检查一次连接（约5分钟，如果tick_interval=3秒）
+        
+        # 设置实时tick回调
+        self.data_manager.add_tick_callback(self._on_real_time_tick)
         
         while self.is_running:
             try:
@@ -205,6 +214,7 @@ class TradingEngine:
                         strategy_markets.add(strategy.market_id_2)
                 
                 # 获取市场数据（包含所有策略使用的市场）
+                # 注意：现在主要依赖WebSocket实时数据，这里主要用于补充K线等历史数据
                 market_data = await self.data_manager.get_latest_data(extra_markets=list(strategy_markets))
                 
                 # 风险检查
@@ -223,11 +233,17 @@ class TradingEngine:
                 # 更新仓位信息
                 await self.position_manager.update_positions()
                 
-                # 执行策略
+                # 执行策略（现在主要依赖实时tick回调，这里作为备用）
                 for strategy in self.strategies:
                     if strategy.is_active():
                         try:
-                            await strategy.on_tick(market_data)
+                            # 检查策略是否支持实时tick模式
+                            if hasattr(strategy, 'use_real_time_ticks') and strategy.use_real_time_ticks:
+                                # 实时tick策略主要通过回调处理，这里只做定期检查
+                                await strategy.on_periodic_update(market_data)
+                            else:
+                                # 传统策略仍使用定时更新
+                                await strategy.on_tick(market_data)
                         except Exception as e:
                             self.logger.error(f"策略 {strategy.name} 执行错误: {e}")
                 
@@ -240,6 +256,29 @@ class TradingEngine:
             except Exception as e:
                 self.logger.error(f"主循环错误: {e}")
                 await asyncio.sleep(1)
+    
+    def _on_real_time_tick(self, market_id: int, tick_data: Dict[str, Any]):
+        """实时tick数据回调 - 类似Pine Script的calc_on_every_tick"""
+        try:
+            # 为支持实时tick的策略执行实时计算
+            for strategy in self.strategies:
+                if strategy.is_active():
+                    try:
+                        # 检查策略是否支持实时tick模式
+                        if hasattr(strategy, 'use_real_time_ticks') and strategy.use_real_time_ticks:
+                            # 检查策略是否关注这个市场
+                            if (hasattr(strategy, 'market_id') and strategy.market_id == market_id) or \
+                               (hasattr(strategy, 'market_id_1') and strategy.market_id_1 == market_id) or \
+                               (hasattr(strategy, 'market_id_2') and strategy.market_id_2 == market_id):
+                                
+                                # 执行实时tick处理
+                                asyncio.create_task(strategy.on_real_time_tick(market_id, tick_data))
+                                
+                    except Exception as e:
+                        self.logger.error(f"策略 {strategy.name} 实时tick处理错误: {e}")
+                        
+        except Exception as e:
+            self.logger.error(f"实时tick回调处理错误: {e}")
                 
     def get_status(self) -> Dict[str, Any]:
         """获取引擎状态"""

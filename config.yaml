@@ -13,6 +13,21 @@ lighter:
 trading:
   tick_interval: 3.0  # 主循环间隔（秒）- 主网使用较大间隔避免限流
   max_concurrent_strategies: 5  # 最大并发策略数
+  
+# WebSocket实时数据配置
+websocket:
+  enabled: true                    # 启用WebSocket实时数据
+  reconnect_interval: 5.0         # 重连间隔（秒）
+  max_reconnect_attempts: 10      # 最大重连次数
+  ping_interval: 30.0             # 心跳间隔（秒）
+  tick_buffer_size: 1000          # tick数据缓冲区大小
+  
+# 实时tick配置
+real_time_tick:
+  enabled: true                    # 启用实时tick处理
+  max_tick_history: 1000          # 最大tick历史记录数
+  tick_processing_interval: 0.1   # tick处理间隔（秒）
+  enable_heikin_ashi: false       # 是否启用Heikin Ashi计算
 
 # 风险管理配置
 risk_management:
@@ -45,57 +60,15 @@ data_sources:
     0: 0.005   # ETH: 最小0.005个
     1: 0.0002  # BTC: 最小0.0002个
     2: 0.05    # SOL: 最小0.05个
-    3: 1       # DOGE: 最小1个（用户确认的实际值）⭐
+    3: 10.0    # DOGE: 最小10个（确保整数和足够数量）⭐
     # 其他市场可根据需要添加
   
   # 自定义市场最小报价金额（覆盖API返回的min_quote_amount）
   # 如果API返回的min_quote_amount不准确，可在此处手动设置
   custom_min_quote_amount:
-    3: 0.1  # DOGE: 最小报价$0.1（如果实际不是$10，请根据测试结果调整）⭐
+    3: 5.0  # DOGE: 最小报价$5.0（确保足够的订单价值）⭐
     # 其他市场可根据需要添加
     # 如果不确定，建议先测试后再设置
-  
-  # ⭐ 需求①②：多市场滑点配置
-  # 每个市场可以单独配置是否开启滑点检测和滑点范围
-  market_slippage_config:
-    0:  # ETH
-      enabled: true      # 是否开启滑点检测
-      tolerance: 0.01    # 滑点容忍度 (1%)
-    1:  # BTC  
-      enabled: true      # 是否开启滑点检测
-      tolerance: 0.005   # 滑点容忍度 (0.5%)
-    2:  # SOL
-      enabled: false     # 关闭滑点检测，直接市价成交
-      tolerance: 0.02    # 如果开启，滑点容忍度 (2%)
-    3:  # DOGE
-      enabled: true      # 是否开启滑点检测
-      tolerance: 0.03    # 滑点容忍度 (3%)，DOGE波动较大
-    # 其他市场默认使用策略级别的price_slippage_tolerance
-  
-  # ⭐ 新需求：多市场止盈止损配置
-  # 每个市场可以单独配置止盈和止损百分比，以及是否启用
-  market_risk_config:
-    0:  # ETH - 相对稳定，使用较小的止盈止损
-      stop_loss_enabled: true   # 是否开启止损
-      stop_loss: 0.15           # 止损百分比 (15%)
-      take_profit_enabled: true # 是否开启止盈
-      take_profit: 0.25         # 止盈百分比 (25%)
-    1:  # BTC - 相对稳定，使用较小的止盈止损
-      stop_loss_enabled: true   # 是否开启止损
-      stop_loss: 0.12           # 止损百分比 (12%)
-      take_profit_enabled: true # 是否开启止盈
-      take_profit: 0.20         # 止盈百分比 (20%)
-    2:  # SOL - 中等波动，使用中等止盈止损
-      stop_loss_enabled: true   # 是否开启止损
-      stop_loss: 0.20           # 止损百分比 (20%)
-      take_profit_enabled: false # 关闭止盈（示例）
-      take_profit: 0.30         # 止盈百分比 (30%) - 仅配置，不生效
-    3:  # DOGE - 高波动，使用较大的止盈止损
-      stop_loss_enabled: true   # 是否开启止损
-      stop_loss: 0.30           # 止损百分比 (30%) - 如用户需求示例
-      take_profit_enabled: true # 是否开启止盈
-      take_profit: 0.50         # 止盈百分比 (50%)
-    # 其他市场默认使用策略级别的stop_loss和take_profit
   
   tradingview:
     enabled: true  # 是否启用TradingView数据源（使用Binance API）
@@ -286,6 +259,47 @@ strategies:
     limit_price_offset: 0.001  # 限价单价格偏移 (0.1%)，仅order_type=limit时有效
     price_slippage_tolerance: 0.01  # 价格滑点容忍度 (1%)，避免滑点过大导致成交价不利 ⭐
     
+    # ⭐ 需求①：K线类型配置（单位：分钟）
+    kline_types: [1]  # 只对1分钟K线发出交易信号
+    
+    # ⭐ 需求①②：各市场滑点配置
+    market_slippage_config:
+      0:  # ETH
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.008   # 滑点容忍度 (0.8%)，均值回归对滑点敏感
+      1:  # BTC  
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.005   # 滑点容忍度 (0.5%)
+      2:  # SOL
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.015   # 滑点容忍度 (1.5%)
+      3:  # DOGE
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.025   # 滑点容忍度 (2.5%)，DOGE波动较大
+    
+    # ⭐ 需求①②：各市场止盈止损配置
+    market_risk_config:
+      0:  # ETH - 相对稳定，使用较小的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.08           # 止损百分比 (8%)，均值回归策略止损较小
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.05         # 止盈百分比 (5%)，均值回归策略止盈较小
+      1:  # BTC - 相对稳定，使用较小的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.06           # 止损百分比 (6%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.04         # 止盈百分比 (4%)
+      2:  # SOL - 中等波动，使用中等止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.10           # 止损百分比 (10%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.08         # 止盈百分比 (8%)
+      3:  # DOGE - 高波动，使用较大的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.15           # 止损百分比 (15%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.12         # 止盈百分比 (12%)
+    
   momentum:
     enabled: true
     market_id: 0
@@ -301,6 +315,47 @@ strategies:
     limit_price_offset: 0.001  # 限价单价格偏移 (0.1%)
     price_slippage_tolerance: 0.01  # 价格滑点容忍度 (1%) ⭐
     
+    # ⭐ 需求①：K线类型配置（单位：分钟）
+    kline_types: [1, 5]  # 对1分钟和5分钟K线都发出交易信号
+    
+    # ⭐ 需求①②：各市场滑点配置
+    market_slippage_config:
+      0:  # ETH
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.01    # 滑点容忍度 (1%)
+      1:  # BTC  
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.005   # 滑点容忍度 (0.5%)
+      2:  # SOL
+        enabled: false     # 关闭滑点检测，直接市价成交
+        tolerance: 0.02    # 如果开启，滑点容忍度 (2%)
+      3:  # DOGE
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.03    # 滑点容忍度 (3%)，DOGE波动较大
+    
+    # ⭐ 需求①②：各市场止盈止损配置
+    market_risk_config:
+      0:  # ETH - 相对稳定，使用较小的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.12           # 止损百分比 (12%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.20         # 止盈百分比 (20%)
+      1:  # BTC - 相对稳定，使用较小的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.10           # 止损百分比 (10%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.18         # 止盈百分比 (18%)
+      2:  # SOL - 中等波动，使用中等止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.18           # 止损百分比 (18%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.25         # 止盈百分比 (25%)
+      3:  # DOGE - 高波动，使用较大的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.25           # 止损百分比 (25%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.40         # 止盈百分比 (40%)
+    
   arbitrage:
     enabled: true
     market_id_1: 0
@@ -315,34 +370,129 @@ strategies:
     limit_price_offset: 0.001  # 限价单价格偏移 (0.1%)
     price_slippage_tolerance: 0.005  # 价格滑点容忍度 (0.5%)，套利策略对滑点更敏感 ⭐
     
-  ut_bot:
-    enabled: true  # 启用
-    market_id: 3  # 使用市场3 (DOGE)
-    # 支持多市场交易（需求②）
-    market_ids: [3, 2, 0]  # DOGE, SOL, ETH - 可同时交易多个市场 ⭐
-    key_value: 0.5
-    atr_period: 5
-    use_heikin_ashi: false
-    position_size: 2.0  # $2.0 USD (DOGE价格$0.21时 = 约9.5 DOGE)
-    stop_loss: 0.02
-    take_profit: 0.01
-    leverage: 10.0  # 10倍杠杆
-    margin_mode: isolated  # 保证金模式: isolated (逐仓模式)
-    order_type: market  # 订单类型: market (市价单) 或 limit (限价单)
-    limit_price_offset: 0.002  # 限价单价格偏移 (0.2%)，买入略低/卖出略高
-    price_slippage_tolerance: 0.02  # 价格滑点容忍度 (2%)，DOGE波动较大可设置更高
-    # 多时间周期确认（需求①）
-    enable_multi_timeframe: true  # 启用5分钟+1分钟多时间周期确认 ⭐
-    # 多时间周期规则:
-    # - 5m-buy + 1m-buy → 开多仓
-    # - 5m-sell + 1m-sell → 开空仓  
-    # - 5m-buy + 1m-sell → 平多仓（不开空仓）
-    # - 5m-sell + 1m-buy → 平空仓（不开多仓）
+    # ⭐ 需求①：K线类型配置（单位：分钟）
+    kline_types: [1]  # 套利策略只对1分钟K线发出交易信号（快速响应）
     
-    # ⭐ 需求③：K线完成确认
-    wait_for_kline_completion: true  # 等待1分钟K线走完后再交易
-    # K线完成确认规则:
-    # - 检测到信号时不立即交易
-    # - 等待当前1分钟K线走完
-    # - 确认最终信号后再交易
-    # - 避免K线中途信号变化
+    # ⭐ 需求①②：各市场滑点配置（套利策略对滑点极其敏感）
+    market_slippage_config:
+      0:  # ETH
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.003   # 滑点容忍度 (0.3%)，套利策略对滑点极其敏感
+      1:  # BTC  
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.002   # 滑点容忍度 (0.2%)，BTC套利对滑点更敏感
+      2:  # SOL
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.005   # 滑点容忍度 (0.5%)
+      3:  # DOGE
+        enabled: true      # 是否开启滑点检测
+        tolerance: 0.008   # 滑点容忍度 (0.8%)，DOGE波动较大但套利仍需控制滑点
+    
+    # ⭐ 需求①②：各市场止盈止损配置（套利策略通常使用较小的止盈止损）
+    market_risk_config:
+      0:  # ETH - 套利策略使用较小的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.02           # 止损百分比 (2%)，套利策略止损很小
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.01         # 止盈百分比 (1%)，套利策略止盈很小
+      1:  # BTC - 套利策略使用较小的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.015          # 止损百分比 (1.5%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.008        # 止盈百分比 (0.8%)
+      2:  # SOL - 套利策略使用较小的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.03           # 止损百分比 (3%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.02         # 止盈百分比 (2%)
+      3:  # DOGE - 套利策略使用较小的止盈止损
+        stop_loss_enabled: true   # 是否开启止损
+        stop_loss: 0.05           # 止损百分比 (5%)
+        take_profit_enabled: true # 是否开启止盈
+        take_profit: 0.03         # 止盈百分比 (3%)
+    
+  ut_bot:
+    enabled: true  # 启用UT Bot策略
+    market_id: 0  # 主要市场：ETH (市场ID 0)
+    
+    # UT Bot Alerts核心参数
+    key_value: 3.0          # 关键值，控制止损距离倍数
+    atr_period: 10          # ATR计算周期
+    use_heikin_ashi: false  # 是否使用Heikin Ashi蜡烛图
+    
+    # 趋势过滤参数
+    ema_length: 200         # EMA长度，用于趋势过滤
+    
+    # 风险管理参数
+    risk_per_trade: 2.5     # 每笔交易风险百分比
+    atr_multiplier: 1.5     # ATR止损倍数
+    risk_reward_breakeven: 0.75  # 保本盈亏比
+    risk_reward_takeprofit: 3.0  # 止盈盈亏比
+    tp_percent: 50.0        # 第一批止盈百分比
+    
+    # 止损类型
+    stoploss_type: "atr"    # "atr" 或 "swing"
+    swing_high_bars: 10     # 摆动高点周期
+    swing_low_bars: 10      # 摆动低点周期
+    
+    # 仓位管理
+    enable_long: true       # 允许做多
+    enable_short: true      # 允许做空
+    use_takeprofit: true    # 使用止盈
+    use_leverage: true      # 使用杠杆
+    
+    # 时间过滤
+    trading_start_time: "00:00"  # 交易开始时间
+    trading_end_time: "23:59"    # 交易结束时间
+    
+    # 实时tick配置
+    use_real_time_ticks: true    # 启用实时tick模式
+    real_time_tick_interval: 0.1 # 实时tick处理间隔（秒）
+    
+    # 订单配置
+    position_size_usd: 1000.0    # 仓位大小(USD)
+    leverage: 1.0                # 杠杆倍数
+    margin_mode: cross           # 保证金模式: cross (全仓) 或 isolated (逐仓)
+    order_type: market           # 订单类型: market (市价单) 或 limit (限价单)
+    limit_price_offset: 0.001    # 限价单价格偏移 (0.1%)
+    price_slippage_tolerance: 0.01  # 价格滑点容忍度 (1%)
+    
+    # 支持多市场交易
+    market_ids: [0, 1, 2]        # ETH, BTC, SOL - 可同时交易多个市场
+    
+    # 多时间周期确认
+    enable_multi_timeframe: true  # 启用多时间周期确认
+    kline_types: [1, 5]          # 对1分钟和5分钟K线都发出交易信号
+    
+    # K线完成确认
+    wait_for_kline_completion: true  # 等待K线走完后再交易
+    
+    # 各市场滑点配置
+    market_slippage_config:
+      0:  # ETH
+        enabled: true
+        tolerance: 0.01    # 滑点容忍度 (1%)
+      1:  # BTC  
+        enabled: true
+        tolerance: 0.005   # 滑点容忍度 (0.5%)
+      2:  # SOL
+        enabled: true
+        tolerance: 0.015   # 滑点容忍度 (1.5%)
+    
+    # 各市场止盈止损配置
+    market_risk_config:
+      0:  # ETH
+        stop_loss_enabled: true
+        stop_loss: 0.15           # 止损百分比 (15%)
+        take_profit_enabled: true
+        take_profit: 0.25         # 止盈百分比 (25%)
+      1:  # BTC
+        stop_loss_enabled: true
+        stop_loss: 0.12           # 止损百分比 (12%)
+        take_profit_enabled: true
+        take_profit: 0.20         # 止盈百分比 (20%)
+      2:  # SOL
+        stop_loss_enabled: true
+        stop_loss: 0.18           # 止损百分比 (18%)
+        take_profit_enabled: true
+        take_profit: 0.30         # 止盈百分比 (30%)

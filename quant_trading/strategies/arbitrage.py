@@ -47,6 +47,10 @@ class ArbitrageStrategy(BaseStrategy):
         self.stop_loss = stop_loss if stop_loss is not None else arb_config.get('stop_loss', 0.005)
         self.take_profit = take_profit if take_profit is not None else arb_config.get('take_profit', 0.01)
         
+        # ⭐ 需求①：K线类型配置
+        self.kline_types = arb_config.get('kline_types', [1])  # 默认只对1分钟K线发出信号
+        self.logger.info(f"K线类型配置: {self.kline_types}分钟 - 策略将对这些时间周期的K线发出交易信号")
+        
         self.logger.info(f"策略配置: position_size=${self.position_size_usd} USD (将根据市场价格自动计算加密货币数量)")
         
         # 状态变量

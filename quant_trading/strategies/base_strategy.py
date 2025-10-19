@@ -36,6 +36,10 @@ class BaseStrategy(ABC):
         self.total_pnl = 0.0
         self.start_time = None
         
+        # 实时tick支持
+        self.use_real_time_ticks = False  # 是否启用实时tick模式
+        self.last_tick_time: Dict[int, datetime] = {}  # 记录每个市场的最后tick时间
+        
     def set_engine(self, engine):
         """设置交易引擎"""
         self.engine = engine
@@ -101,6 +105,69 @@ class BaseStrategy(ABC):
             market_data: 市场数据
         """
         pass
+    
+    async def on_real_time_tick(self, market_id: int, tick_data: Dict[str, Any]):
+        """
+        处理实时tick数据 - 类似Pine Script的calc_on_every_tick
+        
+        Args:
+            market_id: 市场ID
+            tick_data: tick数据，包含price, bid, ask, spread等
+        """
+        try:
+            # 更新最后tick时间
+            self.last_tick_time[market_id] = datetime.now()
+            
+            # 调用子类的实时tick处理方法
+            await self.process_real_time_tick(market_id, tick_data)
+            
+        except Exception as e:
+            self.logger.error(f"实时tick处理失败 (市场 {market_id}): {e}")
+    
+    async def process_real_time_tick(self, market_id: int, tick_data: Dict[str, Any]):
+        """
+        处理实时tick数据 - 子类可重写此方法
+        
+        Args:
+            market_id: 市场ID
+            tick_data: tick数据
+        """
+        # 默认实现：记录tick数据
+        self.logger.debug(f"收到实时tick (市场 {market_id}): 价格 {tick_data.get('price', 0)}")
+    
+    async def on_periodic_update(self, market_data: Dict[int, Dict[str, Any]]):
+        """
+        定期更新回调 - 用于实时tick策略的定期检查
+        
+        Args:
+            market_data: 市场数据
+        """
+        try:
+            # 调用子类的定期更新方法
+            await self.process_periodic_update(market_data)
+            
+        except Exception as e:
+            self.logger.error(f"定期更新处理失败: {e}")
+    
+    async def process_periodic_update(self, market_data: Dict[int, Dict[str, Any]]):
+        """
+        处理定期更新 - 子类可重写此方法
+        
+        Args:
+            market_data: 市场数据
+        """
+        # 默认实现：调用传统的市场数据处理方法
+        await self.process_market_data(market_data)
+    
+    def enable_real_time_ticks(self):
+        """启用实时tick模式"""
+        self.use_real_time_ticks = True
+        self.logger.info(f"策略 {self.name} 已启用实时tick模式")
+    
+    def disable_real_time_ticks(self):
+        """禁用实时tick模式"""
+        self.use_real_time_ticks = False
+        self.logger.info(f"策略 {self.name} 已禁用实时tick模式")
         
     def get_status(self) -> Dict[str, Any]:
         """获取策略状态"""
@@ -132,7 +199,8 @@ class BaseStrategy(ABC):
         
     def _create_order(self, market_id: int, side: str, order_type: str, 
                      size: float, price: float, leverage: float = 1.0,
-                     margin_mode: str = "cross", price_slippage_tolerance: float = None):
+                     margin_mode: str = "cross", price_slippage_tolerance: float = None,
+                     slippage_enabled: bool = True):
         """
         创建订单
         
@@ -145,6 +213,7 @@ class BaseStrategy(ABC):
             leverage: 杠杆倍数，默认1倍（不使用杠杆）
             margin_mode: 保证金模式 ("cross" 全仓 或 "isolated" 逐仓)，默认全仓
             price_slippage_tolerance: 价格滑点容忍度（可选，策略可自定义）
+            slippage_enabled: 是否开启滑点检测，默认开启
         """
         if not self.engine:
             return None
@@ -163,7 +232,8 @@ class BaseStrategy(ABC):
             price=price,
             leverage=leverage,
             margin_mode=margin_mode_enum,
-            price_slippage_tolerance=price_slippage_tolerance
+            price_slippage_tolerance=price_slippage_tolerance,
+            slippage_enabled=slippage_enabled
         )
         
     def _get_position(self, market_id: int):
